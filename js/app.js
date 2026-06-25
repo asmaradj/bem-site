@@ -1,9 +1,12 @@
-document.addEventListener('DOMContentLoaded', () => {
+// ─── Main App ─── Uses localStorage by default, Supabase optional ────
+
+document.addEventListener('DOMContentLoaded', async () => {
   const app = document.getElementById('app');
   let currentSubject = null;
   let currentTab = 'summaries';
+  let currentUserEmail = null;
 
-  // ─── Subscription / Auth Helpers ──────────────────────────────────────
+  // ─── Storage helpers (localStorage) ───────────────────────────────
 
   function generateRef() {
     return 'BEM-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
@@ -21,8 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
   }
 
-  function saveAllSubscriptions(subs) {
-    localStorage.setItem('bem_all_subs', JSON.stringify(subs));
+  function saveAllSubscriptions(list) {
+    localStorage.setItem('bem_all_subs', JSON.stringify(list));
   }
 
   function isContentUnlocked() {
@@ -30,9 +33,48 @@ document.addEventListener('DOMContentLoaded', () => {
     return sub && sub.status === 'active';
   }
 
-  // ─── Home ─────────────────────────────────────────────────────────────
+  // ─── Auth (simple email/password in localStorage) ─────────────────
+
+  function getUsers() {
+    return JSON.parse(localStorage.getItem('bem_users') || '[]');
+  }
+
+  function saveUsers(list) {
+    localStorage.setItem('bem_users', JSON.stringify(list));
+  }
+
+  function getCurrentUser() {
+    return JSON.parse(localStorage.getItem('bem_current_user') || 'null');
+  }
+
+  function setCurrentUser(u) {
+    if (u) localStorage.setItem('bem_current_user', JSON.stringify(u));
+    else localStorage.removeItem('bem_current_user');
+  }
+
+  function registerUser(email, password, name) {
+    const users = getUsers();
+    if (users.find(u => u.email === email)) return { error: '❌ هذا البريد مسجل بالفعل' };
+    const user = { id: 'user_' + Date.now(), email, password, name, created_at: new Date().toISOString() };
+    users.push(user);
+    saveUsers(users);
+    return { user };
+  }
+
+  function loginUser(email, password) {
+    const users = getUsers();
+    const user = users.find(u => u.email === email && u.password === password);
+    if (!user) return { error: '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة' };
+    return { user };
+  }
+
+  // ─── Home ─────────────────────────────────────────────────────────
 
   function renderHome() {
+    const unlocked = isContentUnlocked();
+    const sub = getSubscription();
+    const user = getCurrentUser();
+
     const stats = Object.values(bemData.details).reduce((acc, s) => {
       acc.units += s.units.length;
       s.units.forEach(u => {
@@ -53,43 +95,41 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="stat-item"><div class="num">${stats.exercises}</div><div class="label">تمرين</div></div>
         </div>
         <div style="margin-top:20px">
-          <button class="hero-sub-btn" onclick="window.bemGoSubscribe()">✨ اشترك الآن بـ 2000 د.ج / سنوياً</button>
+          ${unlocked
+            ? '<span class="hero-sub-btn" style="background:var(--accent);cursor:default">✅ اشتراكك نشط</span>'
+            : '<button class="hero-sub-btn" onclick="window.bemGoSubscribe()">✨ اشترك الآن بـ 2000 د.ج / سنوياً</button>'}
         </div>
       </section>
       <div class="container">
         <h2 class="section-title">المواد الدراسية</h2>
         <div class="subjects-grid" id="subjectsGrid">
           ${bemData.subjects.map(s => `
-            <div class="subject-card ${isContentUnlocked() ? '' : 'locked'}" data-subject="${s.id}" style="animation-delay: ${bemData.subjects.indexOf(s) * 0.05}s">
+            <div class="subject-card ${unlocked ? '' : 'locked'}" data-subject="${s.id}" style="animation-delay: ${bemData.subjects.indexOf(s) * 0.05}s">
               <div class="icon">${s.icon}</div>
               <h3>${s.name}</h3>
               <p>${s.desc}</p>
               <span class="badge">${s.badge}</span>
-              ${!isContentUnlocked() ? '<div class="lock-overlay"><span>🔒</span></div>' : ''}
+              ${!unlocked ? '<div class="lock-overlay"><span>🔒</span></div>' : ''}
             </div>
           `).join('')}
         </div>
-        ${!isContentUnlocked() ? `
+        ${!unlocked ? `
           <div class="unlock-banner">
             <p>🔒 المحتوى مقفل. اشترك الآن للوصول إلى جميع الدروس والتمارين والتجارب المتفوقة</p>
             <button class="btn-unlock" onclick="window.bemGoSubscribe()">🚀 فتح المحتوى - اشترك الآن</button>
           </div>
-        ` : `
+        ` : sub ? `
           <div class="unlock-banner active">
             <p>✅ اشتراكك نشط. يمكنك الوصول إلى جميع المحتويات</p>
           </div>
-        `}
+        ` : ''}
       </div>
     `;
 
     document.getElementById('subjectsGrid').addEventListener('click', e => {
       const card = e.target.closest('.subject-card');
       if (card) {
-        if (!isContentUnlocked()) {
-          renderSubscribe();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          return;
-        }
+        if (!isContentUnlocked()) { window.bemGoSubscribe(); return; }
         currentSubject = card.dataset.subject;
         renderSubject(currentSubject);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -98,15 +138,144 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.bemGoSubscribe = () => {
+    const user = getCurrentUser();
+    if (!user) { renderLogin(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    currentUserEmail = user.email;
     renderSubscribe();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ─── Subject ──────────────────────────────────────────────────────────
+  window.bemHome = () => {
+    document.querySelector('.main-header').style.display = 'flex';
+    currentSubject = null;
+    renderHome();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.bemBack = () => {
+    document.querySelector('.main-header').style.display = 'flex';
+    currentSubject = null;
+    renderHome();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ─── Auth UI ──────────────────────────────────────────────────────
+
+  function renderLogin() {
+    document.querySelector('.main-header').style.display = 'none';
+    app.innerHTML = `
+      <div class="container auth-page fade-in">
+        <button class="back-btn" onclick="window.bemBack()">← العودة إلى الرئيسية</button>
+        <div class="auth-card">
+          <div class="auth-icon">🔐</div>
+          <h2>تسجيل الدخول</h2>
+          <p>سجل دخولك لإتمام عملية الاشتراك</p>
+          <div class="auth-form">
+            <div class="form-group">
+              <label>البريد الإلكتروني</label>
+              <input type="email" id="loginEmail" placeholder="example@email.com" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>كلمة المرور</label>
+              <input type="password" id="loginPassword" placeholder="••••••••" class="form-input">
+            </div>
+            <div id="loginError" class="auth-error" style="display:none"></div>
+            <button class="auth-submit-btn" id="loginBtn">🔑 دخول</button>
+            <p class="auth-switch">ليس لديك حساب؟ <a href="#" onclick="window.bemShowSignup();return false">إنشاء حساب جديد</a></p>
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById('loginBtn').addEventListener('click', handleLogin);
+    document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+  }
+
+  window.bemShowSignup = () => {
+    renderSignup();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  function renderSignup() {
+    document.querySelector('.main-header').style.display = 'none';
+    app.innerHTML = `
+      <div class="container auth-page fade-in">
+        <button class="back-btn" onclick="window.bemBack()">← العودة إلى الرئيسية</button>
+        <div class="auth-card">
+          <div class="auth-icon">📝</div>
+          <h2>إنشاء حساب جديد</h2>
+          <p>أنشئ حساباً للتمكن من الاشتراك في المنصة</p>
+          <div class="auth-form">
+            <div class="form-group">
+              <label>الاسم و اللقب</label>
+              <input type="text" id="signupName" placeholder="مثال: مريم بن علي" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>البريد الإلكتروني</label>
+              <input type="email" id="signupEmail" placeholder="example@email.com" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>كلمة المرور</label>
+              <input type="password" id="signupPassword" placeholder="••••••••" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>تأكيد كلمة المرور</label>
+              <input type="password" id="signupConfirm" placeholder="••••••••" class="form-input">
+            </div>
+            <div id="signupError" class="auth-error" style="display:none"></div>
+            <button class="auth-submit-btn" id="signupBtn">📝 إنشاء الحساب</button>
+            <p class="auth-switch">لديك حساب بالفعل؟ <a href="#" onclick="renderLogin();return false">تسجيل الدخول</a></p>
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById('signupBtn').addEventListener('click', handleSignup);
+    document.getElementById('signupConfirm').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignup(); });
+  }
+
+  function handleLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const err = document.getElementById('loginError');
+
+    if (!email || !password) { showErr(err, '⚠️ من فضلك أدخل البريد الإلكتروني وكلمة المرور'); return; }
+
+    const { user, error } = loginUser(email, password);
+    if (error) { showErr(err, error); return; }
+
+    setCurrentUser(user);
+    currentUserEmail = user.email;
+    renderSubscribe();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleSignup() {
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    const confirm = document.getElementById('signupConfirm').value;
+    const err = document.getElementById('signupError');
+
+    if (!name || !email || !password || !confirm) { showErr(err, '⚠️ من فضلك املأ جميع الحقول'); return; }
+    if (password.length < 6) { showErr(err, '⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return; }
+    if (password !== confirm) { showErr(err, '⚠️ كلمة المرور غير متطابقة'); return; }
+
+    const { user, error } = registerUser(email, password, name);
+    if (error) { showErr(err, error); return; }
+
+    setCurrentUser(user);
+    currentUserEmail = user.email;
+    renderSubscribe();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showErr(el, msg) { el.style.display = 'block'; el.textContent = msg; }
+
+  // ─── Subject ──────────────────────────────────────────────────────
 
   function renderSubject(subjectId) {
     const data = bemData.details[subjectId];
     const subject = bemData.subjects.find(s => s.id === subjectId);
+    const unlocked = isContentUnlocked();
     document.querySelector('.main-header').style.display = 'none';
 
     app.innerHTML = `
@@ -116,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <h2>${subject.icon} ${subject.name}</h2>
           <p class="subtitle">${data.subtitle}</p>
         </div>
-        ${isContentUnlocked() ? `
+        ${unlocked ? `
           <div class="tabs">
             <button class="tab-btn active" data-tab="summaries">📖 الدروس</button>
             <button class="tab-btn" data-tab="experience">⭐ تجربة متفوقة</button>
@@ -135,10 +304,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="btn-unlock large" onclick="window.bemGoSubscribe()">🚀 اشترك الآن</button>
           </div>
         `}
-      </div>
-    `;
+      </div>`;
 
-    if (isContentUnlocked()) {
+    if (unlocked) {
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -167,24 +335,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderExperience(student) {
-    return `
-      <div class="experience-card">
-        <div class="student-name">👩‍🎓 ${student.name}</div>
-        <div class="student-badge">🏆 ${student.year}</div>
-        <p style="font-weight:600;margin-top:10px;">نصائحها للنجاح في شهادة التعليم المتوسط:</p>
-        <ul class="advice">${student.advice.map(a => `<li>${a}</li>`).join('')}</ul>
-      </div>`;
+    return `<div class="experience-card"><div class="student-name">👩‍🎓 ${student.name}</div><div class="student-badge">🏆 ${student.year}</div><p style="font-weight:600;margin-top:10px;">نصائحها للنجاح في شهادة التعليم المتوسط:</p><ul class="advice">${student.advice.map(a => `<li>${a}</li>`).join('')}</ul></div>`;
   }
 
   function renderResources(resources) {
-    return `<div class="resources-grid">${resources.map(r => `
-      <div class="resource-card">
-        <div class="r-icon">${r.icon}</div>
-        <h4>${r.title}</h4>
-        <p>${r.desc}</p>
-        <a href="${r.link}" class="btn">تصفح</a>
-      </div>
-    `).join('')}</div>`;
+    return `<div class="resources-grid">${resources.map(r => `<div class="resource-card"><div class="r-icon">${r.icon}</div><h4>${r.title}</h4><p>${r.desc}</p><a href="${r.link}" class="btn">تصفح</a></div>`).join('')}</div>`;
   }
 
   function renderAllExercises(units) {
@@ -192,64 +347,20 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="unit-card">
         <div class="unit-header"><span>${u.title}</span><span class="toggle-icon">▼</span></div>
         <div class="unit-body"><div class="exercise-list">${u.exercises.map(ex => `
-          <div class="exercise-item">
-            <div class="ex-info"><h4>${ex.title}</h4><span>${ex.year}</span></div>
-            <a href="${ex.link}" class="ex-btn">حل التمرين</a>
-          </div>
+          <div class="exercise-item"><div class="ex-info"><h4>${ex.title}</h4><span>${ex.year}</span></div><a href="${ex.link}" class="ex-btn">حل التمرين</a></div>
         `).join('')}</div></div>
       </div>
     `).join('')}</div>`;
   }
 
-  // ─── Navigation ───────────────────────────────────────────────────────
-
-  window.bemBack = () => {
-    document.querySelector('.main-header').style.display = 'flex';
-    currentSubject = null;
-    renderHome();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  window.bemHome = () => {
-    document.querySelector('.main-header').style.display = 'flex';
-    currentSubject = null;
-    renderHome();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // ─── Search ───────────────────────────────────────────────────────────
-
-  document.getElementById('searchBtn').addEventListener('click', () => {
-    const query = document.getElementById('searchInput').value.trim().toLowerCase();
-    if (!query) return;
-    if (!isContentUnlocked()) { renderSubscribe(); return; }
-    const results = bemData.subjects.filter(s => s.name.includes(query) || s.desc.includes(query));
-    if (results.length === 1) {
-      currentSubject = results[0].id;
-      renderSubject(currentSubject);
-    } else if (results.length > 1) {
-      window.scrollTo({ top: document.getElementById('subjectsGrid')?.offsetTop || 0, behavior: 'smooth' });
-    }
-  });
-
-  document.getElementById('searchInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('searchBtn').click();
-  });
-
-  document.getElementById('subscribeBtn').addEventListener('click', () => { renderSubscribe(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-
-  // ─── Subscribe Page ───────────────────────────────────────────────────
+  // ─── Subscribe ────────────────────────────────────────────────────
 
   function renderSubscribe() {
     const existing = getSubscription();
-    if (existing && existing.status === 'active') {
-      renderHome();
-      return;
-    }
-    if (existing && (existing.status === 'pending' || existing.status === 'paid')) {
-      renderSubscribePending(existing);
-      return;
-    }
+    const user = getCurrentUser();
+
+    if (existing && existing.status === 'active') { renderHome(); return; }
+    if (existing && existing.status === 'pending') { renderSubscribePending(existing); return; }
 
     document.querySelector('.main-header').style.display = 'none';
     app.innerHTML = `
@@ -274,23 +385,11 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="subscribe-form">
           <h3>معلومات التسجيل</h3>
-          <div class="form-group">
-            <label>الاسم و اللقب</label>
-            <input type="text" id="regName" placeholder="مثال: مريم بن علي" class="form-input">
-          </div>
-          <div class="form-group">
-            <label>البريد الإلكتروني</label>
-            <input type="email" id="regEmail" placeholder="example@email.com" class="form-input">
-          </div>
+          <div class="form-group"><label>الاسم و اللقب</label><input type="text" id="regName" placeholder="مثال: مريم بن علي" class="form-input" value="${user?.name || ''}"></div>
+          <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="regEmail" value="${user?.email || ''}" class="form-input" readonly style="background:#f0f0f0"></div>
           <div class="form-row">
-            <div class="form-group">
-              <label>رقم الهاتف</label>
-              <input type="tel" id="regPhone" placeholder="05XXXXXXXX" class="form-input">
-            </div>
-            <div class="form-group">
-              <label>الولاية</label>
-              <input type="text" id="regWilaya" placeholder="الجزائر" class="form-input">
-            </div>
+            <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="regPhone" placeholder="05XXXXXXXX" class="form-input"></div>
+            <div class="form-group"><label>الولاية</label><input type="text" id="regWilaya" placeholder="الجزائر" class="form-input"></div>
           </div>
           <div class="form-group">
             <label>المستوى الدراسي</label>
@@ -303,28 +402,15 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <h3 style="margin-top:25px">طريقة الدفع</h3>
           <div class="payment-methods">
-            <label class="payment-option">
-              <input type="radio" name="payment" value="edahabia" checked>
-              <div class="payment-info"><span class="pay-icon">💳</span><div><strong>Edahabia (بطاقة ذهبية)</strong><small>تحويل عبر بطاقة Edahabia لبريد الجزائر</small></div></div>
-            </label>
-            <label class="payment-option">
-              <input type="radio" name="payment" value="cib">
-              <div class="payment-info"><span class="pay-icon">🏦</span><div><strong>بطاقة CIB</strong><small>الدفع عبر البطاقة البنكية CIB</small></div></div>
-            </label>
-            <label class="payment-option">
-              <input type="radio" name="payment" value="ccp">
-              <div class="payment-info"><span class="pay-icon">📮</span><div><strong>الحساب البريدي CCP</strong><small>تحويل بريدي إلى حسابنا</small></div></div>
-            </label>
+            <label class="payment-option"><input type="radio" name="payment" value="edahabia" checked><div class="payment-info"><span class="pay-icon">💳</span><div><strong>Edahabia (بطاقة ذهبية)</strong><small>تحويل عبر بطاقة Edahabia لبريد الجزائر</small></div></div></label>
+            <label class="payment-option"><input type="radio" name="payment" value="cib"><div class="payment-info"><span class="pay-icon">🏦</span><div><strong>بطاقة CIB</strong><small>الدفع عبر البطاقة البنكية CIB</small></div></div></label>
+            <label class="payment-option"><input type="radio" name="payment" value="ccp"><div class="payment-info"><span class="pay-icon">📮</span><div><strong>الحساب البريدي CCP</strong><small>تحويل بريدي إلى حسابنا</small></div></div></label>
           </div>
-          <div id="paymentInstructions" class="payment-instructions" style="display:none">
-            <h4>📋 معلومات التحويل</h4>
-            <div id="instructionsContent"></div>
-          </div>
+          <div id="paymentInstructions" class="payment-instructions" style="display:none"><h4>📋 معلومات التحويل</h4><div id="instructionsContent"></div></div>
           <button class="subscribe-submit-btn" id="submitSubscription">✅ تأكيد الاشتراك</button>
           <p class="form-note">بالنقر على "تأكيد الاشتراك" فإنك توافق على شروط الاستخدام</p>
         </div>
-      </div>
-    `;
+      </div>`;
 
     document.querySelectorAll('input[name="payment"]').forEach(r => r.addEventListener('change', showPaymentInstructions));
     showPaymentInstructions();
@@ -336,28 +422,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('paymentInstructions');
     const content = document.getElementById('instructionsContent');
     const info = {
-      edahabia: {
-        title: '💰 الدفع عبر Edahabia (بطاقة ذهبية)',
-        steps: ['افتح تطبيق Baridimob أو توجه إلى مكتب بريد الجزائر', 'اختر "سحب أو تحويل من بطاقة ذهبية"', 'أدخل رقم الحساب: <strong>002 12345 67890 01</strong>', 'المبلغ: <strong>2 000 د.ج</strong>', 'أرسل إيصال الدفع عبر واتساب إلى الرقم: <strong>0555 00 00 00</strong>']
-      },
-      cib: {
-        title: '💳 الدفع عبر بطاقة CIB',
-        steps: ['ادخل إلى موقع الدفع الإلكتروني لبنكك', 'أدخل رقم الحساب: <strong>007 12345 67890 01</strong>', 'المبلغ: <strong>2 000 د.ج</strong>', 'بعد إتمام الدفع، أرسل تأكيد الدفع عبر واتساب: <strong>0555 00 00 00</strong>']
-      },
-      ccp: {
-        title: '📮 الدفع عبر الحساب البريدي CCP',
-        steps: ['توجه إلى أقرب مكتب بريد الجزائر', 'قم بعملية تحويل بريدي إلى الحساب: <strong>12345678 / Cle 90</strong>', 'المبلغ: <strong>2 000 د.ج</strong>', 'أرسل صورة إيصال التحويل عبر واتساب إلى: <strong>0555 00 00 00</strong>']
-      }
+      edahabia: { title: '💰 الدفع عبر Edahabia (بطاقة ذهبية)', steps: ['افتح تطبيق Baridimob أو توجه إلى مكتب بريد الجزائر', 'اختر "سحب أو تحويل من بطاقة ذهبية"', 'أدخل رقم الحساب: <strong>002 12345 67890 01</strong>', 'المبلغ: <strong>2 000 د.ج</strong>', 'أرسل إيصال الدفع عبر واتساب إلى الرقم: <strong>0555 00 00 00</strong>'] },
+      cib: { title: '💳 الدفع عبر بطاقة CIB', steps: ['ادخل إلى موقع الدفع الإلكتروني لبنكك', 'أدخل رقم الحساب: <strong>007 12345 67890 01</strong>', 'المبلغ: <strong>2 000 د.ج</strong>', 'بعد إتمام الدفع، أرسل تأكيد الدفع عبر واتساب: <strong>0555 00 00 00</strong>'] },
+      ccp: { title: '📮 الدفع عبر الحساب البريدي CCP', steps: ['توجه إلى أقرب مكتب بريد الجزائر', 'قم بعملية تحويل بريدي إلى الحساب: <strong>12345678 / Cle 90</strong>', 'المبلغ: <strong>2 000 د.ج</strong>', 'أرسل صورة إيصال التحويل عبر واتساب إلى: <strong>0555 00 00 00</strong>'] }
     };
     const data = info[method];
     if (data) {
       container.style.display = 'block';
-      content.innerHTML = `
-        <p style="font-weight:600;margin-bottom:8px">${data.title}</p>
-        <ol style="padding-right:20px">${data.steps.map(s => `<li style="margin-bottom:6px">${s}</li>`).join('')}</ol>
-        <div class="whatsapp-btn">
-          <a href="https://wa.me/213555000000?text=${encodeURIComponent('مرحباً، أريد تأكيد اشتراكي السنوي في منصة BEM')}" target="_blank" class="btn-whatsapp">📱 أرسل الإيصال عبر واتساب</a>
-        </div>`;
+      content.innerHTML = `<p style="font-weight:600;margin-bottom:8px">${data.title}</p><ol style="padding-right:20px">${data.steps.map(s => `<li style="margin-bottom:6px">${s}</li>`).join('')}</ol><div class="whatsapp-btn"><a href="https://wa.me/213555000000?text=${encodeURIComponent('مرحباً، أريد تأكيد اشتراكي السنوي في منصة BEM')}" target="_blank" class="btn-whatsapp">📱 أرسل الإيصال عبر واتساب</a></div>`;
     }
   }
 
@@ -369,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const level = document.getElementById('regLevel').value;
     const payment = document.querySelector('input[name="payment"]:checked')?.value;
 
-    if (!name || !email || !phone || !wilaya || !level) { alert('⚠️ من فضلك املأ جميع الحقول'); return; }
+    if (!name || !phone || !wilaya || !level) { alert('⚠️ من فضلك املأ جميع الحقول'); return; }
     if (!/^0[567]\d{8}$/.test(phone.replace(/\s/g, ''))) { alert('⚠️ رقم الهاتف غير صحيح. يجب أن يبدأ بـ 05 أو 06 أو 07'); return; }
 
     const ref = generateRef();
@@ -377,9 +449,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveSubscription(sub);
     const all = getAllSubscriptions();
-    const idx = all.findIndex(s => s.ref === sub.ref);
+    const idx = all.findIndex(s => s.ref === ref);
     if (idx === -1) all.push(sub); else all[idx] = sub;
     saveAllSubscriptions(all);
+
+    speakRegistration(sub);
 
     renderSubscribePending(sub);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -388,7 +462,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderSubscribePending(sub) {
     document.querySelector('.main-header').style.display = 'none';
     const payNames = { edahabia: 'Edahabia (بطاقة ذهبية)', cib: 'بطاقة CIB', ccp: 'الحساب البريدي CCP' };
-
     app.innerHTML = `
       <div class="container subscribe-page fade-in">
         <button class="back-btn" onclick="window.bemBack()">← العودة إلى الرئيسية</button>
@@ -404,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div><span>البريد:</span> ${sub.email}</div>
             <div><span>الهاتف:</span> ${sub.phone}</div>
             <div><span>طريقة الدفع:</span> ${payNames[sub.payment] || sub.payment}</div>
-            <div><span>المبلغ:</span> <strong style="color:var(--secondary)">${sub.amount.toLocaleString()} ${sub.currency}</strong></div>
+            <div><span>المبلغ:</span> <strong style="color:var(--secondary)">${(+sub.amount || 0).toLocaleString()} ${sub.currency}</strong></div>
             <div><span>الحالة:</span> <span class="status-badge pending">في انتظار التفعيل</span></div>
           </div>
           <div class="pending-action" style="background:#fff3e0">
@@ -419,17 +492,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.bemCheckStatus = () => {
     const sub = getSubscription();
-    if (sub && sub.status === 'active') {
-      renderHome();
-    } else if (sub) {
-      renderSubscribePending(sub);
-    } else {
-      renderHome();
-    }
+    if (sub && sub.status === 'active') { renderHome(); }
+    else if (sub) { renderSubscribePending(sub); }
+    else { renderHome(); }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ─── Init ─────────────────────────────────────────────────────────────
+  // ─── Header ───────────────────────────────────────────────────────
+
+  document.getElementById('authBtn').addEventListener('click', () => {
+    const user = getCurrentUser();
+    if (user) {
+      if (confirm('تسجيل الخروج؟')) {
+        setCurrentUser(null);
+        renderHome();
+      }
+    } else {
+      renderLogin();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  document.getElementById('subscribeBtn').addEventListener('click', () => { window.bemGoSubscribe(); });
+
+  document.getElementById('searchBtn').addEventListener('click', () => {
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!q) return;
+    if (!isContentUnlocked()) { window.bemGoSubscribe(); return; }
+    const r = bemData.subjects.filter(s => s.name.includes(q) || s.desc.includes(q));
+    if (r.length === 1) { currentSubject = r[0].id; renderSubject(currentSubject); }
+    else if (r.length > 1) { window.scrollTo({ top: document.getElementById('subjectsGrid')?.offsetTop || 0, behavior: 'smooth' }); }
+  });
+
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('searchBtn').click();
+  });
+
+  // ─── Speech ──────────────────────────────────────────────────────
+
+  function speakRegistration(sub) {
+    try {
+      const msg = new SpeechSynthesisUtterance(`تسجيل إشتراك جديد. الاسم: ${sub.name}. رقم الإشتراك: ${sub.ref}`);
+      msg.lang = 'ar-SA';
+      msg.rate = 0.9;
+      window.speechSynthesis.speak(msg);
+      console.log('🗣️ إعلان تسجيل:', sub.name, sub.ref);
+    } catch (e) {
+      console.log('⚠️ تعذر النطق:', e.message);
+    }
+  }
+
+  // ─── Init ─────────────────────────────────────────────────────────
 
   renderHome();
 });

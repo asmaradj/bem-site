@@ -1180,6 +1180,136 @@ select.form-input {
   background: var(--primary-light);
 }
 
+/* ─── Auth Pages ───────────────────────────────────────────────────── */
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.auth-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 40px 30px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+
+.auth-card .auth-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.auth-card h2 {
+  font-size: 24px;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.auth-card > p {
+  font-size: 14px;
+  color: var(--text-light);
+  margin-bottom: 24px;
+}
+
+.auth-form {
+  text-align: right;
+}
+
+.auth-form .form-group {
+  margin-bottom: 16px;
+}
+
+.auth-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.3s;
+  margin-top: 8px;
+}
+
+.auth-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(26,35,126,0.3);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-light);
+  margin-top: 16px;
+}
+
+.auth-switch a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-switch a:hover {
+  text-decoration: underline;
+}
+
+/* Header buttons */
+.header-btn {
+  transition: background 0.3s, transform 0.2s;
+  white-space: nowrap;
+}
+
+.header-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.03);
+}
+
+/* Admin toolbar */
+.admin-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.admin-logout-btn {
+  background: transparent;
+  color: #c62828;
+  border: 2px solid #c62828;
+  padding: 6px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.3s;
+}
+
+.admin-logout-btn:hover {
+  background: #c62828;
+  color: #fff;
+}
+
 /* ─── Animations ───────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
