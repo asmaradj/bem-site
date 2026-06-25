@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بكالوريا التعليم المتوسط BEM - ملخصات و تمارين</title>
+  <meta name="description" content="منصة شاملة لملخصات دروس شهادة التعليم المتوسط، تجارب التلميذات المتفوقات، مصادر دراسية وتمارين مرتبة حسب المقاطع">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="main-header">
+    <div class="header-inner">
+      <div class="logo" onclick="window.bemHome()" style="cursor:pointer">📚 <span>BEM</span> الملخصات</div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="ابحث عن مادة...">
+          <button id="searchBtn">🔍 بحث</button>
+        </div>
+        <button class="subscribe-header-btn" id="subscribeBtn">✨ اشتراك سنوي</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="app">
+    <div class="loading">جاري التحميل...</div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>بالتوفيق والنجاح لجميع تلاميذ شهادة التعليم المتوسط BEM 🎓</p>
+      <p style="margin-top:8px; opacity:0.6; font-size:13px;">جميع المواد متاحة للمراجعة والتحضير للامتحان</p>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

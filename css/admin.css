@@ -1,0 +1,157 @@
+/* ─── Admin Page Specific Styles ─────────────────────────────────────── */
+
+.admin-body {
+  background: #f0f0f0;
+}
+
+.admin-topbar {
+  background: #263238;
+  color: #fff;
+  padding: 14px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.admin-top-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-logo {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.admin-goback {
+  color: #90caf9;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.admin-goback:hover {
+  color: #fff;
+}
+
+.admin-footer {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  font-size: 13px;
+  margin-top: 40px;
+}
+
+/* Admin Actions */
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.admin-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.admin-btn.activate {
+  background: var(--accent);
+  color: #fff;
+}
+
+.admin-btn.activate:hover {
+  background: #00a844;
+}
+
+.admin-btn.delete {
+  background: #ef5350;
+  color: #fff;
+}
+
+.admin-btn.delete:hover {
+  background: #c62828;
+}
+
+.admin-btn.danger {
+  background: #d32f2f;
+  color: #fff;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.admin-btn.danger:hover {
+  background: #b71c1c;
+}
+
+/* Settings / Stats */
+.admin-settings {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.stat-card .stat-num {
+  display: block;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.stat-card .stat-label {
+  font-size: 13px;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+.stat-card.pending .stat-num { color: #e65100; }
+.stat-card.paid .stat-num { color: #1565c0; }
+.stat-card.active .stat-num { color: #2e7d32; }
+
+.admin-actions-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+.admin-actions-card h3 {
+  font-size: 18px;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-actions {
+    flex-direction: column;
+  }
+}
