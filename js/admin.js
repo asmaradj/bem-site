@@ -1,5 +1,4 @@
-// ─── Admin Panel ─── Fully self-contained with localStorage ─────────
-// Works both standalone (admin.html) and embedded in index.html
+// ─── Admin Panel ─── Standalone page, localStorage-based ───────────
 
 (function () {
   let app, loginView, panelView;
@@ -8,7 +7,7 @@
     app = document.getElementById('adminTabContent');
     loginView = document.getElementById('adminLoginView');
     panelView = document.getElementById('adminPanelView');
-    if (!app || !loginView || !panelView) return;
+    if (!app) return;
 
     // ─── Helpers ──────────────────────────────────────────────────────
 
@@ -189,7 +188,7 @@
 
     function renderCurrentTab() {
       const active = document.querySelector('.admin-tab.active');
-      if (!active) { renderPending(); return; }
+      if (!active) { renderAll(); return; }
       const tab = active.dataset.adminTab;
       if (tab === 'pending') renderPending();
       else if (tab === 'all') renderAll();
@@ -277,31 +276,10 @@
       document.getElementById('confirmPw').value = '';
     };
 
-    // ─── Toggle (embedded in index.html) ─────────────────────────────
-
-    window.enterAdminMode = () => {
-      document.querySelector('.main-header').style.display = 'none';
-      document.getElementById('app').style.display = 'none';
-      document.querySelector('footer').style.display = 'none';
-      if (isLoggedIn()) showPanel();
-      else showLogin();
-    };
-
-    window.exitAdminMode = () => {
-      loginView.style.display = 'none';
-      panelView.style.display = 'none';
-      document.querySelector('.main-header').style.display = 'flex';
-      document.getElementById('app').style.display = 'block';
-      document.querySelector('footer').style.display = 'block';
-    };
-
     // ─── Init ─────────────────────────────────────────────────────────
 
-    // If standalone (admin.html body has class admin-body), auto-show
-    if (document.body.classList.contains('admin-body')) {
-      if (isLoggedIn()) showPanel();
-      else showLogin();
-    }
+    if (isLoggedIn()) showPanel();
+    else showLogin();
   }
 
   // Wait for DOM
