@@ -30,12 +30,20 @@ window.db = {
   async list() {
     try {
       const { data } = await apiFetch('GET');
-      if (data && data.length > 0) {
-        const local = getLocal();
-        const refs = new Set(data.map(s => s.ref));
-        const merged = [...data, ...local.filter(s => !refs.has(s.ref))];
-        if (merged.length > data.length) setLocal(merged);
-        else setLocal(data);
+      const local = getLocal();
+      let unsynced = [];
+      if (local.length > 0) {
+        const apiRefs = new Set((data || []).map(s => s.ref));
+        unsynced = local.filter(s => !apiRefs.has(s.ref));
+        for (const item of unsynced) {
+          try { await apiFetch('POST', item); } catch (e) {}
+        }
+      }
+      const src = unsynced.length > 0 ? (await apiFetch('GET')).data : data;
+      if (src && src.length > 0) {
+        const refs = new Set(src.map(s => s.ref));
+        const merged = [...src, ...local.filter(s => !refs.has(s.ref))];
+        setLocal(merged);
         return merged;
       }
     } catch (e) { console.warn('API GET:', e.message); }
@@ -54,6 +62,20 @@ window.db = {
     try {
       await apiFetch('POST', sub);
     } catch (e) { console.warn('API POST:', e.message); }
+  },
+
+  async syncLocal() {
+    const local = getLocal();
+    if (!local.length) return;
+    try {
+      const { data } = await apiFetch('GET');
+      const apiRefs = new Set((data || []).map(s => s.ref));
+      for (const item of local) {
+        if (!apiRefs.has(item.ref)) {
+          try { await apiFetch('POST', item); } catch (e) {}
+        }
+      }
+    } catch (e) { console.warn('API sync:', e.message); }
   },
 
   async updateStatus(ref, status) {
