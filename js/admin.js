@@ -64,6 +64,7 @@
       const s = getSettings();
       const info = document.getElementById('adminSessionInfo');
       if (info) info.textContent = '👤 ' + s.name;
+      app.innerHTML = '<div class="loading">⏳ جاري تحميل البيانات...</div>';
       await loadSubs();
       renderCurrentTab();
     }

@@ -1,12 +1,18 @@
 const API = '/api/subs';
 
 async function apiFetch(method, body) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  const opts = { method, headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(API, opts);
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || res.status);
-  return json;
+  try {
+    const res = await fetch(API, opts);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || res.status);
+    return json;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function getLocal() {
