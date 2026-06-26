@@ -14,7 +14,7 @@
     var cachedSubs = null;
 
     async function loadSubs() {
-      cachedSubs = await db.list();
+      cachedSubs = await db.adminList();
       return cachedSubs;
     }
 
