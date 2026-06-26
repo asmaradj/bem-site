@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/subs.js": {
+      "runtime": "@vercel/node@3"
+    }
+  }
+}

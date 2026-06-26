@@ -11,12 +11,15 @@
 
     // ─── Helpers ──────────────────────────────────────────────────────
 
-    function getSubs() {
-      return JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
+    var cachedSubs = null;
+
+    async function loadSubs() {
+      cachedSubs = await db.list();
+      return cachedSubs;
     }
 
-    function saveSubs(list) {
-      localStorage.setItem('bem_all_subs', JSON.stringify(list));
+    function getSubs() {
+      return cachedSubs || JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
     }
 
     function getSettings() {
@@ -54,12 +57,13 @@
       if (err) err.style.display = 'none';
     }
 
-    function showPanel() {
+    async function showPanel() {
       loginView.style.display = 'none';
       panelView.style.display = 'block';
       const s = getSettings();
       const info = document.getElementById('adminSessionInfo');
       if (info) info.textContent = '👤 ' + s.name;
+      await loadSubs();
       renderCurrentTab();
     }
 
@@ -186,7 +190,8 @@
       return h;
     }
 
-    function renderCurrentTab() {
+    async function renderCurrentTab() {
+      await loadSubs();
       const active = document.querySelector('.admin-tab.active');
       if (!active) { renderAll(); return; }
       const tab = active.dataset.adminTab;
@@ -196,53 +201,35 @@
     }
 
     document.querySelectorAll('.admin-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
+      tab.addEventListener('click', async () => {
         document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        renderCurrentTab();
+        await renderCurrentTab();
       });
     });
 
     // ─── Global Actions ───────────────────────────────────────────────
 
-    window.adminActivate = (ref) => {
+    window.adminActivate = async (ref) => {
       if (!confirm(`هل أنت متأكد من تفعيل الاشتراك ${ref}؟`)) return;
-      const all = getSubs();
-      const idx = all.findIndex(s => s.ref === ref);
-      if (idx === -1) { alert('❌ الاشتراك غير موجود'); return; }
-      all[idx].status = 'active';
-      all[idx].activated_at = new Date().toISOString();
-      all[idx].expires_at = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-      saveSubs(all);
-      const cur = JSON.parse(localStorage.getItem('bem_subscription') || 'null');
-      if (cur && cur.ref === ref) {
-        cur.status = 'active';
-        cur.activated_at = all[idx].activated_at;
-        cur.expires_at = all[idx].expires_at;
-        localStorage.setItem('bem_subscription', JSON.stringify(cur));
-      }
+      await db.updateStatus(ref, 'active');
       alert(`✅ تم تفعيل الاشتراك ${ref} بنجاح`);
-      renderCurrentTab();
+      await renderCurrentTab();
     };
 
-    window.adminDelete = (ref) => {
+    window.adminDelete = async (ref) => {
       if (!confirm(`هل أنت متأكد من حذف الاشتراك ${ref}؟`)) return;
-      let all = getSubs();
-      all = all.filter(s => s.ref !== ref);
-      saveSubs(all);
-      const cur = JSON.parse(localStorage.getItem('bem_subscription') || 'null');
-      if (cur && cur.ref === ref) localStorage.removeItem('bem_subscription');
+      await db.remove(ref);
       alert(`🗑️ تم حذف الاشتراك ${ref}`);
-      renderCurrentTab();
+      await renderCurrentTab();
     };
 
-    window.adminClearAll = () => {
+    window.adminClearAll = async () => {
       if (!confirm('⚠️ هل أنت متأكد؟ سيتم حذف جميع الاشتراكات!')) return;
       if (!confirm('تأكيد نهائي: سيتم حذف جميع الاشتراكات نهائياً؟')) return;
-      saveSubs([]);
-      localStorage.removeItem('bem_subscription');
+      await db.clearAll();
       alert('🗑️ تم حذف جميع الاشتراكات');
-      renderCurrentTab();
+      await renderCurrentTab();
     };
 
     window.adminExport = () => {
