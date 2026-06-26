@@ -169,7 +169,9 @@
           </div>
           <div class="admin-actions-card">
             <h3>⚙️ إجراءات</h3>
-            <button class="admin-btn danger" onclick="adminClearAll()">🗑️ حذف جميع الاشتراكات</button>
+            <button class="admin-btn" style="background:#2e7d32;color:#fff;width:100%;padding:12px;border:none;border-radius:8px;font-weight:600;cursor:pointer" onclick="adminSyncLocal()">🔄 ترحيل البيانات المحلية إلى الخادم</button>
+            <div id="syncStatus" style="margin-top:6px;font-size:13px;display:none"></div>
+            <button class="admin-btn danger" onclick="adminClearAll()" style="margin-top:8px">🗑️ حذف جميع الاشتراكات</button>
             <button class="admin-btn" style="background:#1565c0;color:#fff;width:100%;padding:12px;border:none;border-radius:8px;font-weight:600;cursor:pointer;margin-top:8px" onclick="adminExport()">📥 تصدير البيانات (JSON)</button>
           </div>
         </div>`;
@@ -231,6 +233,16 @@
       await db.clearAll();
       alert('🗑️ تم حذف جميع الاشتراكات');
       await renderCurrentTab();
+    };
+
+    window.adminSyncLocal = async () => {
+      const st = document.getElementById('syncStatus');
+      if (st) { st.style.display = 'block'; st.innerHTML = '⏳ جاري الترحيل...'; }
+      await db.syncLocal();
+      if (st) st.innerHTML = '✅ تم ترحيل البيانات المحلية إلى قاعدة البيانات بنجاح';
+      await loadSubs();
+      renderCurrentTab();
+      setTimeout(() => { if (st) st.style.display = 'none'; }, 3000);
     };
 
     window.adminExport = () => {
