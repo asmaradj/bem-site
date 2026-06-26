@@ -43,11 +43,7 @@ window.db = {
   },
 
   async adminList() {
-    try {
-      const { data } = await apiFetch('GET');
-      return data || [];
-    } catch (e) { console.error('API GET:', e.message); }
-    return [];
+    return this.list();
   },
 
   async create(sub) {

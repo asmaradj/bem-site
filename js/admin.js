@@ -19,7 +19,8 @@
     }
 
     function getSubs() {
-      return cachedSubs || JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
+      if (cachedSubs && cachedSubs.length > 0) return cachedSubs;
+      return JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
     }
 
     function getSettings() {
