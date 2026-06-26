@@ -66,16 +66,17 @@ window.db = {
 
   async syncLocal() {
     const local = getLocal();
-    if (!local.length) return;
+    let synced = 0;
     try {
       const { data } = await apiFetch('GET');
       const apiRefs = new Set((data || []).map(s => s.ref));
       for (const item of local) {
         if (!apiRefs.has(item.ref)) {
-          try { await apiFetch('POST', item); } catch (e) {}
+          try { await apiFetch('POST', item); synced++; } catch (e) {}
         }
       }
     } catch (e) { console.warn('API sync:', e.message); }
+    return { local: local.length, synced };
   },
 
   async updateStatus(ref, status) {

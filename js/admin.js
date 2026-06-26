@@ -238,11 +238,17 @@
     window.adminSyncLocal = async () => {
       const st = document.getElementById('syncStatus');
       if (st) { st.style.display = 'block'; st.innerHTML = '⏳ جاري الترحيل...'; }
-      await db.syncLocal();
-      if (st) st.innerHTML = '✅ تم ترحيل البيانات المحلية إلى قاعدة البيانات بنجاح';
+      const result = await db.syncLocal();
+      if (result.synced > 0) {
+        if (st) st.innerHTML = `✅ تم ترحيل ${result.synced} اشتراك من المتصفح إلى قاعدة البيانات`;
+      } else if (result.local > 0) {
+        if (st) st.innerHTML = `ℹ️ الاشتراكات المحلية (${result.local}) موجودة بالفعل في قاعدة البيانات`;
+      } else {
+        if (st) st.innerHTML = '⚠️ لا يوجد أي اشتراكات في المتصفح لترحيلها';
+      }
       await loadSubs();
       renderCurrentTab();
-      setTimeout(() => { if (st) st.style.display = 'none'; }, 3000);
+      setTimeout(() => { if (st) st.style.display = 'none'; }, 5000);
     };
 
     window.adminExport = () => {
