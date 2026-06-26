@@ -1,0 +1,11 @@
+{
+  "name": "bem-site",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node api/subs.js"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0"
+  }
+}
