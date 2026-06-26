@@ -1,7 +1,10 @@
 const { createPool } = require('@vercel/postgres');
 
+let sql;
+
 async function getDb() {
-  const sql = createPool({ connectionString: process.env.POSTGRES_URL });
+  if (sql) return sql;
+  sql = createPool({ connectionString: process.env.POSTGRES_URL });
   await sql.query(`
     CREATE TABLE IF NOT EXISTS subscriptions (
       ref TEXT PRIMARY KEY,
@@ -31,17 +34,17 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
-    const sql = await getDb();
+    const db = await getDb();
 
     if (req.method === 'GET') {
-      const { rows } = await sql.query('SELECT * FROM subscriptions ORDER BY created_at DESC');
+      const { rows } = await db.query('SELECT * FROM subscriptions ORDER BY created_at DESC');
       return res.json({ data: rows });
     }
 
     if (req.method === 'POST') {
       const { ref, name, email, phone, wilaya, level, payment, amount, currency, date } = req.body;
       if (!ref || !name) return res.status(400).json({ error: 'ref and name required' });
-      await sql.query(
+      await db.query(
         `INSERT INTO subscriptions (ref, name, email, phone, wilaya, level, payment, amount, currency, date, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')`,
         [ref, name, email || '', phone || '', wilaya || '', level || '', payment || '', amount || 2000, currency || 'د.ج', date || '']
@@ -54,7 +57,7 @@ module.exports = async (req, res) => {
       if (!ref) return res.status(400).json({ error: 'ref required' });
       const activated_at = status === 'active' ? new Date().toISOString() : null;
       const expires_at = status === 'active' ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : null;
-      await sql.query(
+      await db.query(
         'UPDATE subscriptions SET status = $1, activated_at = $2, expires_at = $3 WHERE ref = $4',
         [status || 'pending', activated_at, expires_at, ref]
       );
@@ -64,9 +67,9 @@ module.exports = async (req, res) => {
     if (req.method === 'DELETE') {
       const { ref } = req.body || req.query;
       if (ref) {
-        await sql.query('DELETE FROM subscriptions WHERE ref = $1', [ref]);
+        await db.query('DELETE FROM subscriptions WHERE ref = $1', [ref]);
       } else {
-        await sql.query('DELETE FROM subscriptions');
+        await db.query('DELETE FROM subscriptions');
       }
       return res.json({ ok: true });
     }
