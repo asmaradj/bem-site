@@ -40,24 +40,24 @@ function localSetCurrent(sub) {
 
 window.db = {
   async list() {
+    const local = localList();
     const data = await api('GET');
-    if (data) return data;
-    return localList();
+    if (data && data.length > 0) {
+      // Merge: API items win, but keep local-only items too
+      const refs = new Set(data.map(s => s.ref));
+      const merged = [...data, ...local.filter(s => !refs.has(s.ref))];
+      return merged;
+    }
+    return local;
   },
 
   async create(sub) {
-    const data = await api('POST', sub);
-    if (data) {
-      const list = localList();
-      list.unshift(sub);
-      localSave(list);
-      localSetCurrent(sub);
-      return data;
-    }
     const list = localList();
     list.unshift(sub);
     localSave(list);
     localSetCurrent(sub);
+
+    await api('POST', sub);
     return sub;
   },
 
@@ -67,46 +67,32 @@ window.db = {
       : null;
     const updates = { status, activated_at: status === 'active' ? new Date().toISOString() : null, expires_at: expiresAt };
 
-    const data = await api('PUT', { ref, updates });
-    if (data) {
-      const list = localList();
-      const idx = list.findIndex(s => s.ref === ref);
-      if (idx !== -1) Object.assign(list[idx], updates);
-      localSave(list);
-      const cur = localCurrent();
-      if (cur && cur.ref === ref) { Object.assign(cur, updates); localSetCurrent(cur); }
-      return data;
-    }
     const list = localList();
     const idx = list.findIndex(s => s.ref === ref);
     if (idx !== -1) Object.assign(list[idx], updates);
     localSave(list);
     const cur = localCurrent();
     if (cur && cur.ref === ref) { Object.assign(cur, updates); localSetCurrent(cur); }
+
+    await api('PUT', { ref, updates });
     return updates;
   },
 
   async remove(ref) {
-    const data = await api('DELETE', { ref });
-    if (data) {
-      let list = localList().filter(s => s.ref !== ref);
-      localSave(list);
-      const cur = localCurrent();
-      if (cur && cur.ref === ref) localSetCurrent(null);
-      return data;
-    }
     let list = localList().filter(s => s.ref !== ref);
     localSave(list);
     const cur = localCurrent();
     if (cur && cur.ref === ref) localSetCurrent(null);
+
+    await api('DELETE', { ref });
     return { ok: true };
   },
 
   async clearAll() {
-    const data = await api('DELETE', { all: true });
-    if (data) { localStorage.removeItem('bem_all_subs'); localStorage.removeItem('bem_subscription'); return data; }
     localStorage.removeItem('bem_all_subs');
     localStorage.removeItem('bem_subscription');
+
+    await api('DELETE', { all: true });
     return { ok: true };
   }
 };
