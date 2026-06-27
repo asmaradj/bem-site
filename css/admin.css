@@ -146,6 +146,120 @@
   margin-bottom: 16px;
 }
 
+/* ─── Admin Table ─────────────────────────────────────────────────── */
+
+.admin-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 24px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+
+.admin-table th {
+  background: #263238;
+  color: #fff;
+  padding: 10px 8px;
+  text-align: center;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: middle;
+}
+
+.admin-table tr:hover td {
+  background: #f5f5f5;
+}
+
+.admin-table .section-header td {
+  background: #e8f5e9;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 8px;
+  border-bottom: 2px solid #a5d6a7;
+}
+
+.admin-table .section-header.inactive td {
+  background: #fff3e0;
+  border-bottom: 2px solid #ffcc80;
+}
+
+.admin-table .status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-table .status-badge.active {
+  background: #c8e6c9;
+  color: #2e7d32;
+}
+
+.admin-table .status-badge.pending {
+  background: #ffe0b2;
+  color: #e65100;
+}
+
+.admin-table .status-badge.paid {
+  background: #bbdefb;
+  color: #1565c0;
+}
+
+.admin-table .table-activate {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-table .table-activate:hover {
+  background: #00a844;
+}
+
+.admin-table .table-delete {
+  background: #ef5350;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-table .table-delete:hover {
+  background: #c62828;
+}
+
+.admin-table .cell-name {
+  text-align: right;
+  font-weight: 600;
+}
+
+.admin-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-light);
+  font-size: 16px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .admin-stats-grid {

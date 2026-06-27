@@ -100,6 +100,25 @@
 
     // ─── Render Tabs ──────────────────────────────────────────────────
 
+    function tbody(rows) {
+      const pm = { edahabia: 'Edahabia', cib: 'CIB', ccp: 'CCP' };
+      return rows.map(s => `
+        <tr class="${s.status}">
+          <td class="cell-name">${s.name || '-'}</td>
+          <td>${s.phone || '-'}</td>
+          <td>${s.wilaya || '-'}</td>
+          <td>${s.level || '-'}</td>
+          <td>${pm[s.payment] || s.payment || '-'}</td>
+          <td>${s.date ? new Date(s.date).toLocaleDateString('ar-DZ') : s.created_at ? new Date(s.created_at).toLocaleDateString('ar-DZ') : '-'}</td>
+          <td><span class="status-badge ${s.status}">${statusLabel(s.status)}</span></td>
+          <td style="white-space:nowrap">
+            ${s.status !== 'active' ? `<button class="table-activate" onclick="adminActivate('${s.ref}')">تفعيل</button> ` : ''}
+            <button class="table-delete" onclick="adminDelete('${s.ref}')">حذف</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
     function renderPending() {
       const all = getSubs();
       const pending = all.filter(s => s.status !== 'active');
@@ -107,19 +126,15 @@
         app.innerHTML = '<div class="admin-empty"><p>✅ لا يوجد اشتراكات في انتظار التفعيل</p></div>';
         return;
       }
-      app.innerHTML = `<div class="admin-list">${pending.map(s => `
-        <div class="admin-item">
-          <div class="admin-item-header">
-            <span class="admin-ref">${s.ref}</span>
-            <span class="status-badge ${s.status}">${statusLabel(s.status)}</span>
-          </div>
-          <div class="admin-item-body">${renderFields(s)}</div>
-          <div class="admin-actions">
-            <button class="admin-btn activate" onclick="adminActivate('${s.ref}')">✅ تفعيل الاشتراك</button>
-            <button class="admin-btn delete" onclick="adminDelete('${s.ref}')">🗑️ حذف</button>
-          </div>
-        </div>
-      `).join('')}</div>`;
+      app.innerHTML = `
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr>
+              <th>الاسم</th><th>الهاتف</th><th>الولاية</th><th>المستوى</th><th>الدفع</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th>
+            </tr></thead>
+            <tbody>${tbody(pending)}</tbody>
+          </table>
+        </div>`;
     }
 
     function renderAll() {
@@ -128,19 +143,20 @@
         app.innerHTML = '<div class="admin-empty"><p>لا يوجد أي اشتراك مسجل بعد</p></div>';
         return;
       }
-      app.innerHTML = `<div class="admin-list">${all.map(s => `
-        <div class="admin-item ${s.status}">
-          <div class="admin-item-header">
-            <span class="admin-ref">${s.ref}</span>
-            <span class="status-badge ${s.status}">${statusLabel(s.status)}</span>
-          </div>
-          <div class="admin-item-body">${renderFields(s)}</div>
-          <div class="admin-actions">
-            ${s.status !== 'active' ? `<button class="admin-btn activate" onclick="adminActivate('${s.ref}')">✅ تفعيل الاشتراك</button>` : ''}
-            <button class="admin-btn delete" onclick="adminDelete('${s.ref}')">🗑️ حذف</button>
-          </div>
-        </div>
-      `).join('')}</div>`;
+      const active = all.filter(s => s.status === 'active');
+      const inactive = all.filter(s => s.status !== 'active');
+      app.innerHTML = `
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr>
+              <th>الاسم</th><th>الهاتف</th><th>الولاية</th><th>المستوى</th><th>الدفع</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th>
+            </tr></thead>
+            <tbody>
+              ${active.length ? `<tr class="section-header"><td colspan="8">✅ الحسابات النشطة (${active.length})</td></tr>${tbody(active)}` : ''}
+              ${inactive.length ? `<tr class="section-header inactive"><td colspan="8">⏳ الحسابات غير المفعلة (${inactive.length})</td></tr>${tbody(inactive)}` : ''}
+            </tbody>
+          </table>
+        </div>`;
     }
 
     function renderSettings() {
