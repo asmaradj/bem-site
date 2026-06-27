@@ -299,6 +299,15 @@
       document.getElementById('confirmPw').value = '';
     };
 
+    // ─── Listen for background sync ──────────────────────────────────
+
+    window.addEventListener('subs-updated', async (e) => {
+      cachedSubs = e.detail;
+      if (document.getElementById('adminPanelView')?.style?.display !== 'none') {
+        renderCurrentTab();
+      }
+    });
+
     // ─── Init ─────────────────────────────────────────────────────────
 
     if (isLoggedIn()) showPanel();

@@ -32,6 +32,22 @@ function setMySub(sub) {
   else localStorage.removeItem('bem_subscription');
 }
 
+async function syncAndFire(local) {
+  try {
+    const { data } = await apiFetch('GET');
+    const apiRefs = new Set((data || []).map(s => s.ref));
+    const unsynced = local.filter(s => !apiRefs.has(s.ref));
+    for (const item of unsynced) {
+      try { await apiFetch('POST', item); } catch (e) {}
+    }
+    const { data: fresh } = unsynced.length ? await apiFetch('GET') : { data };
+    const refs = new Set(fresh.map(s => s.ref));
+    const merged = [...fresh, ...local.filter(s => !refs.has(s.ref))];
+    setLocal(merged);
+    window.dispatchEvent(new CustomEvent('subs-updated', { detail: merged }));
+  } catch (e) { console.warn('background sync:', e.message); }
+}
+
 window.db = {
   async list() {
     try {
@@ -57,7 +73,15 @@ window.db = {
   },
 
   async adminList() {
-    return this.list();
+    const local = getLocal();
+    if (local.length) {
+      syncAndFire(local);
+      return local;
+    }
+    try {
+      const { data } = await apiFetch('GET');
+      return data || [];
+    } catch (e) { return []; }
   },
 
   async create(sub) {
