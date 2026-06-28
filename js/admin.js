@@ -157,16 +157,35 @@
     window.adminActivate = async (ref) => {
       if (!confirm(`تفعيل ${ref}؟`)) return;
       app.innerHTML = '<div class="loading">⏳ جاري التفعيل...</div>';
-      await db.updateStatus(ref, 'active');
-      await loadSubs();
-      renderCurrentTab();
+      try {
+        const r = await fetch('https://api.jsonbin.io/v3/b/6a3e6a0eda38895dfe02709a/latest', { headers: { 'X-Master-Key': '$2a$10$rC3ecItXnAfIvauWD7iScelNRNvIEYDU1/ZXDTRine2xItBTrsc3W' } });
+        const j = await r.json();
+        const data = (j.record && j.record.data) || [];
+        const item = data.find(s => s.ref === ref);
+        if (!item) { app.innerHTML = '<div class="admin-empty"><p>❌ الاشتراك غير موجود</p></div>'; return; }
+        item.status = 'active';
+        await fetch('https://api.jsonbin.io/v3/b/6a3e6a0eda38895dfe02709a', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': '$2a$10$rC3ecItXnAfIvauWD7iScelNRNvIEYDU1/ZXDTRine2xItBTrsc3W' }, body: JSON.stringify({ data }) });
+        await loadSubs();
+        renderCurrentTab();
+      } catch (e) {
+        app.innerHTML = `<div class="admin-empty"><p>❌ فشل التفعيل: ${e.message}</p><button class="admin-btn" onclick="adminRefresh()" style="margin-top:12px;padding:10px 20px;background:#1565c0;color:#fff;border:none;border-radius:8px;cursor:pointer">🔄 إعادة</button></div>`;
+      }
     };
 
     window.adminDelete = async (ref) => {
       if (!confirm(`حذف ${ref}؟`)) return;
-      await db.remove(ref);
-      await loadSubs();
-      renderCurrentTab();
+      app.innerHTML = '<div class="loading">⏳ جاري الحذف...</div>';
+      try {
+        const r = await fetch('https://api.jsonbin.io/v3/b/6a3e6a0eda38895dfe02709a/latest', { headers: { 'X-Master-Key': '$2a$10$rC3ecItXnAfIvauWD7iScelNRNvIEYDU1/ZXDTRine2xItBTrsc3W' } });
+        const j = await r.json();
+        const data = (j.record && j.record.data) || [];
+        const filtered = data.filter(s => s.ref !== ref);
+        await fetch('https://api.jsonbin.io/v3/b/6a3e6a0eda38895dfe02709a', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': '$2a$10$rC3ecItXnAfIvauWD7iScelNRNvIEYDU1/ZXDTRine2xItBTrsc3W' }, body: JSON.stringify({ data: filtered }) });
+        await loadSubs();
+        renderCurrentTab();
+      } catch (e) {
+        app.innerHTML = `<div class="admin-empty"><p>❌ فشل الحذف: ${e.message}</p><button class="admin-btn" onclick="adminRefresh()" style="margin-top:12px;padding:10px 20px;background:#1565c0;color:#fff;border:none;border-radius:8px;cursor:pointer">🔄 إعادة</button></div>`;
+      }
     };
 
     window.adminClearAll = async () => {
