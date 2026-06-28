@@ -8,9 +8,7 @@
     panelView = document.getElementById('adminPanelView');
     if (!app) return;
 
-    function getSubs() {
-      return cachedSubs || JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
-    }
+    function getSubs() { return cachedSubs || JSON.parse(localStorage.getItem('bem_all_subs') || '[]'); }
 
     function getSettings() {
       const s = JSON.parse(localStorage.getItem('bem_admin_settings') || '{}');
@@ -18,11 +16,10 @@
       return s;
     }
 
-    function saveSettings(s) {
-      localStorage.setItem('bem_admin_settings', JSON.stringify(s));
-    }
+    function saveSettings(s) { localStorage.setItem('bem_admin_settings', JSON.stringify(s)); }
 
     function isLoggedIn() { return localStorage.getItem('bem_admin_logged') === 'yes'; }
+
     function setLoggedIn(v) {
       if (v) localStorage.setItem('bem_admin_logged', 'yes');
       else localStorage.removeItem('bem_admin_logged');
@@ -46,11 +43,13 @@
     }
 
     async function loadSubs() {
-      const fast = JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
-      if (fast.length) cachedSubs = fast;
-      db.adminList().then(r => { cachedSubs = r; renderCurrentTab(); });
-      if (!fast.length) cachedSubs = await db.adminList();
-      return cachedSubs;
+      try {
+        const r = await db.adminList();
+        if (r && r.length) { cachedSubs = r; return r; }
+      } catch (e) { console.warn('adminList error:', e); }
+      const l = JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
+      if (l.length) cachedSubs = l;
+      return cachedSubs || [];
     }
 
     document.getElementById('adminLoginBtn')?.addEventListener('click', () => {
@@ -98,15 +97,16 @@
 
     function renderPending() {
       const a = getSubs().filter(s => s.status !== 'active');
-      if (!a.length) { app.innerHTML = '<div class="admin-empty"><p>✅ لا يوجد اشتراكات في انتظار التفعيل</p></div>'; return; }
-      app.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>الاسم</th><th>الهاتف</th><th>الولاية</th><th>المستوى</th><th>الدفع</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>${tbody(a)}</tbody></table></div>`;
+      app.innerHTML = a.length
+        ? `<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>الاسم</th><th>الهاتف</th><th>الولاية</th><th>المستوى</th><th>الدفع</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>${tbody(a)}</tbody></table></div>`
+        : '<div class="admin-empty"><p>✅ لا يوجد اشتراكات في انتظار التفعيل</p></div>';
     }
 
     function renderAll() {
-      const a = getSubs();
-      if (!a.length) { app.innerHTML = '<div class="admin-empty"><p>لا يوجد أي اشتراك مسجل بعد</p></div>'; return; }
-      const active = a.filter(s => s.status === 'active');
-      const inactive = a.filter(s => s.status !== 'active');
+      const all = getSubs();
+      if (!all.length) { app.innerHTML = '<div class="admin-empty"><p>⚠️ لا يوجد أي اشتراك مسجل بعد. تأكد من اتصال JSONBin.</p><button class="admin-btn" onclick="adminRefresh()" style="margin-top:12px;background:#1565c0;color:#fff;padding:10px 20px;border:none;border-radius:8px;cursor:pointer">🔄 إعادة تحميل</button></div>'; return; }
+      const active = all.filter(s => s.status === 'active');
+      const inactive = all.filter(s => s.status !== 'active');
       app.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>الاسم</th><th>الهاتف</th><th>الولاية</th><th>المستوى</th><th>الدفع</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>
         ${active.length ? `<tr class="section-header"><td colspan="8">✅ الحسابات النشطة (${active.length})</td></tr>${tbody(active)}` : ''}
         ${inactive.length ? `<tr class="section-header inactive"><td colspan="8">⏳ الحسابات غير المفعلة (${inactive.length})</td></tr>${tbody(inactive)}` : ''}
@@ -156,8 +156,8 @@
 
     window.adminActivate = async (ref) => {
       if (!confirm(`تفعيل ${ref}؟`)) return;
+      app.innerHTML = '<div class="loading">⏳ جاري التفعيل...</div>';
       await db.updateStatus(ref, 'active');
-      alert(`✅ تم التفعيل`);
       await loadSubs();
       renderCurrentTab();
     };
@@ -191,6 +191,7 @@
     window.adminRefresh = async () => {
       app.innerHTML = '<div class="loading">⏳ جاري التحديث...</div>';
       cachedSubs = null;
+      localStorage.removeItem('bem_all_subs');
       await loadSubs();
       renderCurrentTab();
     };
