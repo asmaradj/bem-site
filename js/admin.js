@@ -191,9 +191,17 @@
     window.adminClearAll = async () => {
       if (!confirm('⚠️ حذف الكل؟')) return;
       if (!confirm('تأكيد نهائي؟')) return;
-      await db.clearAll();
-      await loadSubs();
-      renderCurrentTab();
+      app.innerHTML = '<div class="loading">⏳ جاري الحذف...</div>';
+      try {
+        await fetch('https://api.jsonbin.io/v3/b/6a3e6a0eda38895dfe02709a', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': '$2a$10$rC3ecItXnAfIvauWD7iScelNRNvIEYDU1/ZXDTRine2xItBTrsc3W' }, body: JSON.stringify({ data: [] }) });
+        localStorage.removeItem('bem_all_subs');
+        localStorage.removeItem('bem_subscription');
+        cachedSubs = null;
+        await loadSubs();
+        renderCurrentTab();
+      } catch (e) {
+        app.innerHTML = `<div class="admin-empty"><p>❌ فشل الحذف: ${e.message}</p></div>`;
+      }
     };
 
     window.adminExport = () => {
