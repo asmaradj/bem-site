@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html dir="rtl"><head><meta charset="UTF-8"><title>اختبار JSONBin</title></head>
+<body style="font-family:sans-serif;padding:20px">
+<h2>🔍 اختبار الاتصال بـ JSONBin</h2>
+<div id="result" style="background:#f5f5f5;padding:15px;border-radius:8px;margin-top:10px">جارٍ التحميل...</div>
+<button onclick="testConnection()" style="margin-top:10px;padding:10px 20px;background:#1565c0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:15px">🔄 إعادة الاختبار</button>
+<script>
+const BIN_ID = '6a3e6a0eda38895dfe02709a';
+const MASTER_KEY = '$2a$10$rC3ecItXnAfIvauWD7iScelNRNvIEYDU1/ZXDTRine2xItBTrsc3W';
+async function testConnection() {
+  const el = document.getElementById('result');
+  el.innerHTML = '⏳ جاري الاختبار...';
+  try {
+    const r = await fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', { headers: { 'X-Master-Key': MASTER_KEY } });
+    const j = await r.json();
+    const data = (j.record && j.record.data) || [];
+    let html = '✅ <strong>تم الاتصال بـ JSONBin</strong><br><br>';
+    html += '<strong>عدد الاشتراكات:</strong> ' + data.length + '<br><br>';
+    if (data.length) {
+      html += '<table border="1" style="border-collapse:collapse;width:100%"><thead><tr style="background:#e0e0e0"><th>#</th><th>الاسم</th><th>الهاتف</th><th>الحالة</th></tr></thead><tbody>';
+      data.forEach((s, i) => { html += '<tr><td>' + (i+1) + '</td><td>' + (s.name||'-') + '</td><td>' + (s.phone||'-') + '</td><td>' + (s.status||'-') + '</td></tr>'; });
+      html += '</tbody></table>';
+    } else {
+      html += '⚠️ لا توجد بيانات في JSONBin';
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '❌ <strong>فشل الاتصال:</strong> ' + e.message;
+  }
+}
+testConnection();
+</script>
+</body></html>
