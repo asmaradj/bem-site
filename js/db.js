@@ -57,21 +57,25 @@ window.db = {
   },
 
   async adminList() {
-    const local = getLocal();
-    if (local.length) {
-      this.list().then(merged => {
-        if (merged && merged.length) {
-          setLocal(merged);
-          window.dispatchEvent(new CustomEvent('subs-updated', { detail: merged }));
-        }
-      });
-      return local;
-    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 1200);
     try {
-      const { data } = await apiFetch('GET');
-      if (data && data.length) setLocal(data);
-      return data || [];
-    } catch (e) { return []; }
+      const res = await fetch(API, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (res.ok) {
+        const { data } = await res.json();
+        if (data && data.length) { setLocal(data); return data; }
+      }
+    } catch (e) {} // timeout or error → fall back to local
+    clearTimeout(timer);
+    const local = getLocal();
+    apiFetch('GET').then(({ data }) => {
+      if (data && data.length) {
+        setLocal(data);
+        window.dispatchEvent(new CustomEvent('subs-updated', { detail: data }));
+      }
+    }).catch(() => {});
+    return local;
   },
 
   async create(sub) {
