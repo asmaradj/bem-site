@@ -2,7 +2,7 @@ const API = '/api/subs';
 
 async function apiFetch(method, body) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 8000);
+  const timer = setTimeout(() => ctrl.abort(), 15000);
   const opts = { method, headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal };
   if (body) opts.body = JSON.stringify(body);
   try {
@@ -58,22 +58,16 @@ window.db = {
 
   async adminList() {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 1200);
+    const timer = setTimeout(() => ctrl.abort(), 2500);
     try {
       const res = await fetch(API, { signal: ctrl.signal });
       clearTimeout(timer);
-      if (res.ok) {
-        const { data } = await res.json();
-        if (data && data.length) { setLocal(data); return data; }
-      }
-    } catch (e) {} // timeout or error → fall back to local
+      if (res.ok) { const { data } = await res.json(); if (data && data.length) { setLocal(data); return data; } }
+    } catch (e) {}
     clearTimeout(timer);
     const local = getLocal();
     apiFetch('GET').then(({ data }) => {
-      if (data && data.length) {
-        setLocal(data);
-        window.dispatchEvent(new CustomEvent('subs-updated', { detail: data }));
-      }
+      if (data && data.length) { setLocal(data); window.dispatchEvent(new CustomEvent('subs-updated', { detail: data })); }
     }).catch(() => {});
     return local;
   },
