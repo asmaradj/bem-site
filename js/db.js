@@ -52,12 +52,17 @@ window.db = {
     l.unshift(sub);
     setLocal(l);
     setMySub(sub);
-    try {
-      const r = await getRemote();
-      r.unshift(sub);
-      await putRemote(r);
-    } catch (e) {
-      try { await putRemote(l); } catch (e2) { console.warn(e2.message); }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const r = await getRemote();
+        r.unshift(sub);
+        await putRemote(r);
+        return;
+      } catch (e) {
+        if (attempt === 2) {
+          try { await putRemote(l); } catch (e2) { console.warn('create fail: ' + e2.message); }
+        } else await new Promise(r => setTimeout(r, 1000));
+      }
     }
   },
   async updateStatus(ref, status) {
