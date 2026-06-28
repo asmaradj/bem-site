@@ -1,0 +1,45 @@
+.admin-body { background: #f0f0f0; }
+.admin-topbar { background: #263238; color: #fff; padding: 14px 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.admin-top-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+.admin-logo { font-size: 18px; font-weight: 700; }
+.admin-goback { color: #90caf9; text-decoration: none; font-size: 14px; font-weight: 600; }
+.admin-goback:hover { color: #fff; }
+.admin-footer { text-align: center; padding: 20px; color: #888; font-size: 13px; margin-top: 40px; }
+.admin-btn { padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+.admin-table-wrap { overflow-x: auto; margin-bottom: 24px; }
+.admin-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-size: 13px; }
+.admin-table th { background: #263238; color: #fff; padding: 10px 8px; text-align: center; font-weight: 600; white-space: nowrap; }
+.admin-table td { padding: 8px; text-align: center; border-bottom: 1px solid #e0e0e0; }
+.admin-table tr:hover td { background: #f5f5f5; }
+.admin-table .section-header td { background: #e8f5e9; font-weight: 700; font-size: 14px; padding: 10px 8px; border-bottom: 2px solid #a5d6a7; }
+.admin-table .section-header.inactive td { background: #fff3e0; border-bottom: 2px solid #ffcc80; }
+.admin-table .status-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.admin-table .status-badge.active { background: #c8e6c9; color: #2e7d32; }
+.admin-table .status-badge.pending { background: #ffe0b2; color: #e65100; }
+.admin-table .status-badge.paid { background: #bbdefb; color: #1565c0; }
+.admin-table .table-activate { background: #00c853; color: #fff; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+.admin-table .table-activate:hover { background: #00a844; }
+.admin-table .table-delete { background: #ef5350; color: #fff; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+.admin-table .table-delete:hover { background: #c62828; }
+.admin-table .cell-name { text-align: right; font-weight: 600; }
+.admin-empty { text-align: center; padding: 40px 20px; color: #888; font-size: 16px; }
+
+.admin-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
+.admin-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.admin-tab { background: #e0e0e0; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+.admin-tab.active { background: #1565c0; color: #fff; }
+.admin-tab:hover { opacity: 0.8; }
+.admin-logout-btn { background: #d32f2f; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.admin-logout-btn:hover { background: #b71c1c; }
+
+.admin-settings { max-width: 600px; margin: 0 auto; }
+.admin-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: #fff; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.stat-card .stat-num { display: block; font-size: 32px; font-weight: 800; color: #1565c0; }
+.stat-card .stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+.stat-card.pending .stat-num { color: #e65100; }
+.stat-card.paid .stat-num { color: #1565c0; }
+.stat-card.active .stat-num { color: #2e7d32; }
+.admin-actions-card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px; }
+@media (max-width: 768px) { .admin-stats-grid { grid-template-columns: repeat(2, 1fr); } }

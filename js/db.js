@@ -1,31 +1,81 @@
-function getLocal() {
-  return JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
+const BIN_ID = '6a3e6a0eda38895dfe02709a';
+const MASTER_KEY = '$2a$10$rC3ecItXnAfIvauWD7iScelNRNvIEYDU1/ZXDTRine2xItBTrsc3W';
+const BASE = 'https://api.jsonbin.io/v3/b';
+
+async function getRemote() {
+  const r = await fetch(`${BASE}/${BIN_ID}/latest`, { headers: { 'X-Master-Key': MASTER_KEY } });
+  if (!r.ok) throw new Error('JSONBin GET ' + r.status);
+  const j = await r.json();
+  return (j.record && j.record.data) || [];
 }
 
-function setLocal(list) {
-  localStorage.setItem('bem_all_subs', JSON.stringify(list));
+async function putRemote(data) {
+  const r = await fetch(`${BASE}/${BIN_ID}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
+    body: JSON.stringify({ data })
+  });
+  if (!r.ok) throw new Error('JSONBin PUT ' + r.status);
 }
+
+function local() { return JSON.parse(localStorage.getItem('bem_all_subs') || '[]'); }
+function setLocal(d) { localStorage.setItem('bem_all_subs', JSON.stringify(d)); }
+function mySub() { return JSON.parse(localStorage.getItem('bem_subscription') || 'null'); }
+function setMySub(s) { if (s) localStorage.setItem('bem_subscription', JSON.stringify(s)); else localStorage.removeItem('bem_subscription'); }
 
 window.db = {
-  list() {
-    return getLocal();
+  async list() {
+    try {
+      const r = await getRemote();
+      if (r.length) { setLocal(r); return r; }
+    } catch (e) { console.warn(e.message); }
+    return local();
   },
-  create(sub) {
-    const list = getLocal();
-    list.unshift(sub);
-    setLocal(list);
-    localStorage.setItem('bem_subscription', JSON.stringify(sub));
+  async adminList() {
+    try {
+      const r = await getRemote();
+      if (r.length) { setLocal(r); return r; }
+    } catch (e) { console.warn(e.message); }
+    const l = local();
+    if (l.length) {
+      try { await putRemote(l); } catch (e) {}
+    }
+    return l;
   },
-  updateStatus(ref, status) {
-    const list = getLocal();
-    const idx = list.findIndex(s => s.ref === ref);
-    if (idx !== -1) { list[idx].status = status; setLocal(list); }
+  async create(sub) {
+    const l = local();
+    l.unshift(sub);
+    setLocal(l);
+    setMySub(sub);
+    try {
+      const r = await getRemote();
+      r.unshift(sub);
+      await putRemote(r);
+    } catch (e) { console.warn(e.message); }
   },
-  remove(ref) {
-    setLocal(getLocal().filter(s => s.ref !== ref));
+  async updateStatus(ref, status) {
+    const l = local();
+    const i = l.findIndex(s => s.ref === ref);
+    if (i !== -1) { l[i].status = status; setLocal(l); }
+    const m = mySub();
+    if (m && m.ref === ref) { m.status = status; setMySub(m); }
+    try {
+      const r = await getRemote();
+      const j = r.findIndex(s => s.ref === ref);
+      if (j !== -1) { r[j].status = status; await putRemote(r); }
+    } catch (e) { console.warn(e.message); }
   },
-  clearAll() {
+  async remove(ref) {
+    setLocal(local().filter(s => s.ref !== ref));
+    if (mySub()?.ref === ref) setMySub(null);
+    try {
+      const r = (await getRemote()).filter(s => s.ref !== ref);
+      await putRemote(r);
+    } catch (e) { console.warn(e.message); }
+  },
+  async clearAll() {
     localStorage.removeItem('bem_all_subs');
     localStorage.removeItem('bem_subscription');
+    try { await putRemote([]); } catch (e) { console.warn(e.message); }
   }
 };

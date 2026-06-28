@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة تحكم الإدارة - BEM</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+  <div id="adminLoginView">
+    <div class="container" style="max-width:420px;margin:60px auto">
+      <div class="auth-card">
+        <div class="auth-icon">🔐</div>
+        <h2>دخول الإدارة</h2>
+        <div class="auth-form">
+          <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="adminPassword" placeholder="••••••••" class="form-input" autofocus>
+          </div>
+          <div id="adminLoginError" class="auth-error" style="display:none"></div>
+          <button class="auth-submit-btn" id="adminLoginBtn">🔑 دخول</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="adminPanelView" style="display:none">
+    <header class="admin-topbar">
+      <div class="admin-top-inner">
+        <div class="admin-logo">🔐 لوحة تحكم الإدارة - BEM</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <a href="index.html" class="admin-goback">← العودة إلى الموقع</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="container admin-page fade-in">
+        <div class="admin-toolbar">
+          <button class="admin-btn" style="background:#1565c0;color:#fff;padding:6px 14px;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px" onclick="adminRefresh()">🔄 تحديث</button>
+          <button class="admin-logout-btn" id="adminLogoutBtn">🚪 تسجيل الخروج</button>
+        </div>
+
+        <div class="admin-tabs">
+          <button class="admin-tab" data-admin-tab="pending">⏳ في انتظار التفعيل</button>
+          <button class="admin-tab active" data-admin-tab="all">📋 جميع الاشتراكات</button>
+          <button class="admin-tab" data-admin-tab="settings">⚙️ الإعدادات</button>
+        </div>
+
+        <div id="adminTabContent">
+          <div class="loading">جاري التحميل...</div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="admin-footer">
+      <p>© 2025 منصة BEM التعليمية</p>
+    </footer>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
