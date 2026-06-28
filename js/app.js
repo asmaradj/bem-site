@@ -505,7 +505,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
-  window.bemCheckStatus = () => {
+  window.bemCheckStatus = async () => {
+    await syncSubscription();
     const sub = getSubscription();
     if (sub && sub.status === 'active') { renderHome(); }
     else if (sub) { renderSubscribePending(sub); }
