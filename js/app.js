@@ -482,9 +482,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             <a href="https://wa.me/213555000000?text=${encodeURIComponent('تأكيد دفع اشتراك BEM\nالرقم: ' + sub.ref + '\nالاسم: ' + sub.name + '\nالمبلغ: ' + sub.amount + ' د.ج')}" target="_blank" class="btn-whatsapp large">📱 أرسل الإيصال عبر واتساب</a>
           </div>
           <button class="btn-refresh" onclick="window.bemCheckStatus()">🔄 التحقق من حالة الاشتراك</button>
+          <button class="btn-refresh" style="background:var(--primary);color:#fff;border-color:var(--primary)" onclick="window.bemResendSubscription()">📤 إعادة إرسال الاشتراك</button>
         </div>
       </div>`;
   }
+
+  window.bemResendSubscription = async () => {
+    const sub = getSubscription();
+    if (!sub) { return; }
+    const btn = document.querySelector('.btn-refresh:last-child');
+    if (btn) { btn.textContent = '⏳ جاري الإرسال...'; btn.disabled = true; }
+    try {
+      const existing = await db.adminList();
+      const found = existing.find(s => s.ref === sub.ref);
+      if (found) { alert('✅ الاشتراك موجود بالفعل في النظام'); return; }
+      await db.create(sub);
+      alert('✅ تم إرسال الاشتراك');
+    } catch (e) {
+      alert('⚠️ فشل الإرسال: ' + e.message);
+    } finally {
+      if (btn) { btn.textContent = '📤 إعادة إرسال الاشتراك'; btn.disabled = false; }
+    }
+  };
 
   window.bemCheckStatus = () => {
     const sub = getSubscription();
