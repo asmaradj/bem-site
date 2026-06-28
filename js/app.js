@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function handleSubscribe() {
+  async function handleSubscribe() {
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const phone = document.getElementById('regPhone').value.trim();
@@ -447,13 +447,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ref = generateRef();
     const sub = { ref, name, email, phone, wilaya, level, payment, amount: 2000, currency: 'د.ج', date: new Date().toISOString(), status: 'pending' };
 
-    saveSubscription(sub);
-    const all = getAllSubscriptions();
-    const idx = all.findIndex(s => s.ref === ref);
-    if (idx === -1) all.push(sub); else all[idx] = sub;
-    saveAllSubscriptions(all);
-
     speakRegistration(sub);
+
+    await db.create(sub);
 
     renderSubscribePending(sub);
     window.scrollTo({ top: 0, behavior: 'smooth' });
