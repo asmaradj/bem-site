@@ -34,18 +34,9 @@ window.db = {
   async adminList() {
     try {
       const r = await getRemote();
-      if (r.length) {
-        const l = local();
-        const refs = new Set(r.map(s => s.ref));
-        const unsynced = l.filter(s => !refs.has(s.ref));
-        if (unsynced.length) { r.push(...unsynced); try { await putRemote(r); } catch (e) {} }
-        setLocal(r);
-        return r;
-      }
+      if (r && r.length) { setLocal(r); return r; }
     } catch (e) { console.warn(e.message); }
-    const l = local();
-    if (l.length) { try { await putRemote(l); } catch (e) {} }
-    return l;
+    return local();
   },
   async create(sub) {
     const l = local();

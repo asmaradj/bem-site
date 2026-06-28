@@ -44,8 +44,8 @@
 
     async function loadSubs() {
       try {
-        const r = await db.adminList();
-        if (r && r.length) { cachedSubs = r; return r; }
+        cachedSubs = await db.adminList();
+        return cachedSubs;
       } catch (e) { console.warn('adminList error:', e); }
       const l = JSON.parse(localStorage.getItem('bem_all_subs') || '[]');
       if (l.length) cachedSubs = l;
