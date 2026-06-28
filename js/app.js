@@ -557,7 +557,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // ─── Sync subscription from JSONBin ─────────────────────────────
+
+  async function syncSubscription() {
+    const local = getSubscription();
+    if (!local) return;
+    try {
+      const all = await db.list();
+      const remote = all.find(s => s.ref === local.ref);
+      if (remote && remote.status !== local.status) {
+        local.status = remote.status;
+        saveSubscription(local);
+        if (remote.status === 'active') saveAllSubscriptions(all);
+      }
+    } catch (e) { console.warn('sync error:', e.message); }
+  }
+
   // ─── Init ─────────────────────────────────────────────────────────
 
-  renderHome();
+  syncSubscription().then(() => renderHome());
 });
