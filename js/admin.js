@@ -306,9 +306,9 @@
       document.getElementById('confirmPw').value = '';
     };
 
-    // ─── Listen for background sync ──────────────────────────────────
+    // ─── Listen for background refresh ──────────────────────────────
 
-    window.addEventListener('subs-updated', async (e) => {
+    window.addEventListener('subs-updated', (e) => {
       cachedSubs = e.detail;
       renderCurrentTab();
     });
