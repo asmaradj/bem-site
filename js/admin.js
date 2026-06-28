@@ -252,6 +252,13 @@
       await renderCurrentTab();
     };
 
+    window.adminRefresh = async () => {
+      app.innerHTML = '<div class="loading">⏳ جاري التحديث...</div>';
+      cachedSubs = null;
+      await loadSubs();
+      renderCurrentTab();
+    };
+
     window.adminSyncLocal = async () => {
       const st = document.getElementById('syncStatus');
       if (st) { st.style.display = 'block'; st.innerHTML = '⏳ جاري الترحيل...'; }
@@ -303,9 +310,7 @@
 
     window.addEventListener('subs-updated', async (e) => {
       cachedSubs = e.detail;
-      if (document.getElementById('adminPanelView')?.style?.display !== 'none') {
-        renderCurrentTab();
-      }
+      renderCurrentTab();
     });
 
     // ─── Init ─────────────────────────────────────────────────────────
