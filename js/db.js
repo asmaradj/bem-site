@@ -20,19 +20,19 @@ function setMySub(s) { if (s) localStorage.setItem('bem_subscription', JSON.stri
 
 window.db = {
   async list() {
-    try { return await supabase('GET', 'subscriptions?order=date.desc'); }
+    try { return await supabase('GET', 'TSET?order=date.desc'); }
     catch (e) { console.warn(e.message); return local(); }
   },
   async adminList() {
-    try { return await supabase('GET', 'subscriptions?order=date.desc'); }
+    try { return await supabase('GET', 'TSET?order=date.desc'); }
     catch (e) { console.warn(e.message); return local(); }
   },
   async create(sub) {
     const l = local(); l.unshift(sub); setLocal(l); setMySub(sub);
     try {
-      await supabase('POST', 'subscriptions', sub);
+      await supabase('POST', 'TSET', sub);
     } catch (e) {
-      try { await supabase('POST', 'subscriptions', sub); } catch (e2) { console.warn('create fail: ' + e2.message); }
+      try { await supabase('POST', 'TSET', sub); } catch (e2) { console.warn('create fail: ' + e2.message); }
     }
   },
   async updateStatus(ref, status) {
@@ -46,19 +46,19 @@ window.db = {
       const body = status === 'active'
         ? { status, activated_at: now, expires_at: new Date(Date.now() + 365*24*60*60*1000).toISOString() }
         : { status };
-      await supabase('PATCH', 'subscriptions?ref=eq.' + encodeURIComponent(ref), body);
+      await supabase('PATCH', 'TSET?ref=eq.' + encodeURIComponent(ref), body);
     } catch (e) { console.warn(e.message); }
   },
   async remove(ref) {
     setLocal(local().filter(s => s.ref !== ref));
     if (mySub()?.ref === ref) setMySub(null);
-    try { await supabase('DELETE', 'subscriptions?ref=eq.' + encodeURIComponent(ref)); }
+    try { await supabase('DELETE', 'TSET?ref=eq.' + encodeURIComponent(ref)); }
     catch (e) { console.warn(e.message); }
   },
   async clearAll() {
     localStorage.removeItem('bem_all_subs');
     localStorage.removeItem('bem_subscription');
-    try { await supabase('DELETE', 'subscriptions'); }
+    try { await supabase('DELETE', 'TSET'); }
     catch (e) { console.warn(e.message); }
   }
 };
