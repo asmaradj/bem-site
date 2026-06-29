@@ -1,21 +1,16 @@
-const BIN_ID = '6a3e6a0eda38895dfe02709a';
-const MASTER_KEY = '$2a$10$rC3ecItXnAfIvauWD7iScelNRNvIEYDU1/ZXDTRine2xItBTrsc3W';
-const BASE = 'https://api.jsonbin.io/v3/b';
+const SUPABASE_URL = 'https://vcflomphcmmctpczhmzx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Rk58lrT6uXsf-r6WCr7_TA_NJCI46rg';
 
-async function getRemote() {
-  const r = await fetch(`${BASE}/${BIN_ID}/latest`, { headers: { 'X-Master-Key': MASTER_KEY } });
-  if (!r.ok) throw new Error('JSONBin GET ' + r.status);
-  const j = await r.json();
-  return (j.record && j.record.data) || [];
-}
-
-async function putRemote(data) {
-  const r = await fetch(`${BASE}/${BIN_ID}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
-    body: JSON.stringify({ data })
-  });
-  if (!r.ok) throw new Error('JSONBin PUT ' + r.status);
+async function supabase(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+  if (!r.ok && method !== 'DELETE') throw new Error('Supabase ' + method + ' ' + r.status);
+  if (method === 'DELETE') return;
+  return r.json();
 }
 
 function local() { return JSON.parse(localStorage.getItem('bem_all_subs') || '[]'); }
@@ -25,35 +20,19 @@ function setMySub(s) { if (s) localStorage.setItem('bem_subscription', JSON.stri
 
 window.db = {
   async list() {
-    try {
-      const r = await getRemote();
-      if (r.length) { setLocal(r); return r; }
-    } catch (e) { console.warn(e.message); }
-    return local();
+    try { return await supabase('GET', 'subscriptions?order=date.desc'); }
+    catch (e) { console.warn(e.message); return local(); }
   },
   async adminList() {
-    try {
-      const r = await getRemote();
-      if (r && r.length) { setLocal(r); return r; }
-    } catch (e) { console.warn(e.message); }
-    return local();
+    try { return await supabase('GET', 'subscriptions?order=date.desc'); }
+    catch (e) { console.warn(e.message); return local(); }
   },
   async create(sub) {
-    const l = local();
-    l.unshift(sub);
-    setLocal(l);
-    setMySub(sub);
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const r = await getRemote();
-        r.unshift(sub);
-        await putRemote(r);
-        return;
-      } catch (e) {
-        if (attempt === 2) {
-          try { await putRemote(l); } catch (e2) { console.warn('create fail: ' + e2.message); }
-        } else await new Promise(r => setTimeout(r, 1000));
-      }
+    const l = local(); l.unshift(sub); setLocal(l); setMySub(sub);
+    try {
+      await supabase('POST', 'subscriptions', sub);
+    } catch (e) {
+      try { await supabase('POST', 'subscriptions', sub); } catch (e2) { console.warn('create fail: ' + e2.message); }
     }
   },
   async updateStatus(ref, status) {
@@ -63,22 +42,23 @@ window.db = {
     const m = mySub();
     if (m && m.ref === ref) { m.status = status; setMySub(m); }
     try {
-      const r = await getRemote();
-      const j = r.findIndex(s => s.ref === ref);
-      if (j !== -1) { r[j].status = status; await putRemote(r); }
+      const now = new Date().toISOString();
+      const body = status === 'active'
+        ? { status, activated_at: now, expires_at: new Date(Date.now() + 365*24*60*60*1000).toISOString() }
+        : { status };
+      await supabase('PATCH', 'subscriptions?ref=eq.' + encodeURIComponent(ref), body);
     } catch (e) { console.warn(e.message); }
   },
   async remove(ref) {
     setLocal(local().filter(s => s.ref !== ref));
     if (mySub()?.ref === ref) setMySub(null);
-    try {
-      const r = (await getRemote()).filter(s => s.ref !== ref);
-      await putRemote(r);
-    } catch (e) { console.warn(e.message); }
+    try { await supabase('DELETE', 'subscriptions?ref=eq.' + encodeURIComponent(ref)); }
+    catch (e) { console.warn(e.message); }
   },
   async clearAll() {
     localStorage.removeItem('bem_all_subs');
     localStorage.removeItem('bem_subscription');
-    try { await putRemote([]); } catch (e) { console.warn(e.message); }
+    try { await supabase('DELETE', 'subscriptions'); }
+    catch (e) { console.warn(e.message); }
   }
 };
