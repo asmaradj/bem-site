@@ -447,12 +447,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ─── Init ─────────────────────────────────────────────────────────
 
-  onAuthStateChange((event, user) => {
-    currentAuthUser = user;
-    const btn = document.getElementById('authBtn');
-    if (btn) btn.textContent = user ? '👤 ' + (user.email || 'حسابي') : '👤 دخول';
-  });
-
   getCurrentSupabaseUser().then(user => {
     const btn = document.getElementById('authBtn');
     if (btn) btn.textContent = user ? '👤 ' + (user.email || 'حسابي') : '👤 دخول';
