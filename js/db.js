@@ -2,15 +2,19 @@ const SUPABASE_URL = 'https://vcflomphcmmctpczhmzx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Rk58lrT6uXsf-r6WCr7_TA_NJCI46rg';
 
 async function supabase(method, path, body) {
+  const ctl = new AbortController();
+  const tmr = setTimeout(() => ctl.abort(), 8000);
   const opts = {
-    method,
+    method, signal: ctl.signal,
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' }
   };
   if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
-  if (!r.ok && method !== 'DELETE') throw new Error('Supabase ' + method + ' ' + r.status);
-  if (method === 'DELETE') return;
-  return r.json();
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+    if (!r.ok && method !== 'DELETE') throw new Error('Supabase ' + method + ' ' + r.status);
+    if (method === 'DELETE') return;
+    return r.json();
+  } finally { clearTimeout(tmr); }
 }
 
 function local() { return JSON.parse(localStorage.getItem('bem_all_subs') || '[]'); }

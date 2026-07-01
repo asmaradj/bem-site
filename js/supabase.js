@@ -4,28 +4,36 @@ const AUTH_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : 'https://v
 const AUTH_KEY = typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : (typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : 'sb_publishable_Rk58lrT6uXsf-r6WCr7_TA_NJCI46rg');
 
 async function supabaseAuth(method, path, body) {
+  const ctl = new AbortController();
+  const tmr = setTimeout(() => ctl.abort(), 10000);
   const opts = {
-    method,
+    method, signal: ctl.signal,
     headers: { 'apikey': AUTH_KEY, 'Authorization': 'Bearer ' + AUTH_KEY, 'Content-Type': 'application/json' }
   };
   if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(AUTH_URL + '/auth/v1/' + path, opts);
-  const json = await r.json();
-  if (!r.ok) throw new Error(json.msg || json.error || json.error_description || 'Auth error ' + r.status);
-  return json;
+  try {
+    const r = await fetch(AUTH_URL + '/auth/v1/' + path, opts);
+    const json = await r.json();
+    if (!r.ok) throw new Error(json.msg || json.error || json.error_description || 'Auth error ' + r.status);
+    return json;
+  } finally { clearTimeout(tmr); }
 }
 
 async function getCurrentUser() {
   const accessToken = localStorage.getItem('sb-access-token');
   if (!accessToken) return null;
+  const ctl = new AbortController();
+  const tmr = setTimeout(() => ctl.abort(), 8000);
   try {
     const r = await fetch(AUTH_URL + '/auth/v1/user', {
+      signal: ctl.signal,
       headers: { 'apikey': AUTH_KEY, 'Authorization': 'Bearer ' + accessToken }
     });
     if (!r.ok) { localStorage.removeItem('sb-access-token'); return null; }
     const user = await r.json();
     return user;
   } catch { return null; }
+  finally { clearTimeout(tmr); }
 }
 
 async function signUp(email, password, name) {
