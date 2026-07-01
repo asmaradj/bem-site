@@ -33,39 +33,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     return sub && sub.status === 'active';
   }
 
-  // ─── Auth (simple email/password in localStorage) ─────────────────
+  // ─── Auth (Supabase Auth) ────────────────────────────────────────
 
-  function getUsers() {
-    return JSON.parse(localStorage.getItem('bem_users') || '[]');
-  }
+  let currentAuthUser = null;
 
-  function saveUsers(list) {
-    localStorage.setItem('bem_users', JSON.stringify(list));
-  }
-
-  function getCurrentUser() {
-    return JSON.parse(localStorage.getItem('bem_current_user') || 'null');
-  }
-
-  function setCurrentUser(u) {
-    if (u) localStorage.setItem('bem_current_user', JSON.stringify(u));
-    else localStorage.removeItem('bem_current_user');
-  }
-
-  function registerUser(email, password, name) {
-    const users = getUsers();
-    if (users.find(u => u.email === email)) return { error: '❌ هذا البريد مسجل بالفعل' };
-    const user = { id: 'user_' + Date.now(), email, password, name, created_at: new Date().toISOString() };
-    users.push(user);
-    saveUsers(users);
-    return { user };
-  }
-
-  function loginUser(email, password) {
-    const users = getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
-    if (!user) return { error: '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة' };
-    return { user };
+  async function getCurrentSupabaseUser() {
+    const u = await getCurrentUser();
+    currentAuthUser = u;
+    return u;
   }
 
   // ─── Home ─────────────────────────────────────────────────────────
@@ -73,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderHome() {
     const unlocked = isContentUnlocked();
     const sub = getSubscription();
-    const user = getCurrentUser();
+    const user = currentAuthUser;
 
     const stats = Object.values(bemData.details).reduce((acc, s) => {
       acc.units += s.units.length;
@@ -138,11 +113,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.bemGoSubscribe = () => {
-    const user = getCurrentUser();
-    if (!user) { renderLogin(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-    currentUserEmail = user.email;
-    renderSubscribe();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    requireAuth(async (user) => {
+      currentAuthUser = user;
+      currentUserEmail = user.email;
+      renderSubscribe();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
   window.bemHome = () => {
@@ -159,116 +135,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ─── Auth UI ──────────────────────────────────────────────────────
-
-  function renderLogin() {
-    document.querySelector('.main-header').style.display = 'none';
-    app.innerHTML = `
-      <div class="container auth-page fade-in">
-        <button class="back-btn" onclick="window.bemBack()">← العودة إلى الرئيسية</button>
-        <div class="auth-card">
-          <div class="auth-icon">🔐</div>
-          <h2>تسجيل الدخول</h2>
-          <p>سجل دخولك لإتمام عملية الاشتراك</p>
-          <div class="auth-form">
-            <div class="form-group">
-              <label>البريد الإلكتروني</label>
-              <input type="email" id="loginEmail" placeholder="example@email.com" class="form-input">
-            </div>
-            <div class="form-group">
-              <label>كلمة المرور</label>
-              <input type="password" id="loginPassword" placeholder="••••••••" class="form-input">
-            </div>
-            <div id="loginError" class="auth-error" style="display:none"></div>
-            <button class="auth-submit-btn" id="loginBtn">🔑 دخول</button>
-            <p class="auth-switch">ليس لديك حساب؟ <a href="#" onclick="window.bemShowSignup();return false">إنشاء حساب جديد</a></p>
-          </div>
-        </div>
-      </div>`;
-
-    document.getElementById('loginBtn').addEventListener('click', handleLogin);
-    document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
-  }
-
   window.bemShowSignup = () => {
     renderSignup();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  function renderSignup() {
-    document.querySelector('.main-header').style.display = 'none';
-    app.innerHTML = `
-      <div class="container auth-page fade-in">
-        <button class="back-btn" onclick="window.bemBack()">← العودة إلى الرئيسية</button>
-        <div class="auth-card">
-          <div class="auth-icon">📝</div>
-          <h2>إنشاء حساب جديد</h2>
-          <p>أنشئ حساباً للتمكن من الاشتراك في المنصة</p>
-          <div class="auth-form">
-            <div class="form-group">
-              <label>الاسم و اللقب</label>
-              <input type="text" id="signupName" placeholder="مثال: مريم بن علي" class="form-input">
-            </div>
-            <div class="form-group">
-              <label>البريد الإلكتروني</label>
-              <input type="email" id="signupEmail" placeholder="example@email.com" class="form-input">
-            </div>
-            <div class="form-group">
-              <label>كلمة المرور</label>
-              <input type="password" id="signupPassword" placeholder="••••••••" class="form-input">
-            </div>
-            <div class="form-group">
-              <label>تأكيد كلمة المرور</label>
-              <input type="password" id="signupConfirm" placeholder="••••••••" class="form-input">
-            </div>
-            <div id="signupError" class="auth-error" style="display:none"></div>
-            <button class="auth-submit-btn" id="signupBtn">📝 إنشاء الحساب</button>
-            <p class="auth-switch">لديك حساب بالفعل؟ <a href="#" onclick="renderLogin();return false">تسجيل الدخول</a></p>
-          </div>
-        </div>
-      </div>`;
-
-    document.getElementById('signupBtn').addEventListener('click', handleSignup);
-    document.getElementById('signupConfirm').addEventListener('keydown', e => { if (e.key === 'Enter') handleSignup(); });
-  }
-
-  function handleLogin() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const err = document.getElementById('loginError');
-
-    if (!email || !password) { showErr(err, '⚠️ من فضلك أدخل البريد الإلكتروني وكلمة المرور'); return; }
-
-    const { user, error } = loginUser(email, password);
-    if (error) { showErr(err, error); return; }
-
-    setCurrentUser(user);
-    currentUserEmail = user.email;
-    renderSubscribe();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function handleSignup() {
-    const name = document.getElementById('signupName').value.trim();
-    const email = document.getElementById('signupEmail').value.trim();
-    const password = document.getElementById('signupPassword').value;
-    const confirm = document.getElementById('signupConfirm').value;
-    const err = document.getElementById('signupError');
-
-    if (!name || !email || !password || !confirm) { showErr(err, '⚠️ من فضلك املأ جميع الحقول'); return; }
-    if (password.length < 6) { showErr(err, '⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return; }
-    if (password !== confirm) { showErr(err, '⚠️ كلمة المرور غير متطابقة'); return; }
-
-    const { user, error } = registerUser(email, password, name);
-    if (error) { showErr(err, error); return; }
-
-    setCurrentUser(user);
-    currentUserEmail = user.email;
-    renderSubscribe();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function showErr(el, msg) { el.style.display = 'block'; el.textContent = msg; }
 
   // ─── Subject ──────────────────────────────────────────────────────
 
@@ -357,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderSubscribe() {
     const existing = getSubscription();
-    const user = getCurrentUser();
+    const user = currentAuthUser;
 
     if (existing && existing.status === 'active') { renderHome(); return; }
     if (existing && existing.status === 'pending') { renderSubscribePending(existing); return; }
@@ -445,7 +315,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!/^0[567]\d{8}$/.test(phone.replace(/\s/g, ''))) { alert('⚠️ رقم الهاتف غير صحيح. يجب أن يبدأ بـ 05 أو 06 أو 07'); return; }
 
     const ref = generateRef();
-    const sub = { ref, name, email, phone, wilaya, level, payment, amount: 2000, currency: 'د.ج', date: new Date().toISOString(), status: 'pending' };
+    const sub = { ref, name, email, phone, wilaya, level, payment, amount: 2000, currency: 'د.ج', date: new Date().toISOString(), status: 'pending', user_id: currentAuthUser?.id || null };
 
     speakRegistration(sub);
 
@@ -516,15 +386,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ─── Header ───────────────────────────────────────────────────────
 
-  document.getElementById('authBtn').addEventListener('click', () => {
-    const user = getCurrentUser();
+  document.getElementById('authBtn').addEventListener('click', async () => {
+    const user = await getCurrentUser();
     if (user) {
       if (confirm('تسجيل الخروج؟')) {
-        setCurrentUser(null);
+        await signOut();
+        currentAuthUser = null;
         renderHome();
       }
     } else {
-      renderLogin();
+      requireAuth(() => { renderHome(); });
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
@@ -575,6 +446,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ─── Init ─────────────────────────────────────────────────────────
+
+  onAuthStateChange((event, user) => {
+    currentAuthUser = user;
+    const btn = document.getElementById('authBtn');
+    if (btn) btn.textContent = user ? '👤 ' + (user.email || 'حسابي') : '👤 دخول';
+  });
+
+  getCurrentSupabaseUser().then(user => {
+    const btn = document.getElementById('authBtn');
+    if (btn) btn.textContent = user ? '👤 ' + (user.email || 'حسابي') : '👤 دخول';
+  });
 
   syncSubscription().then(() => renderHome());
 });
