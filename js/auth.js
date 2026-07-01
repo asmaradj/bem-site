@@ -101,12 +101,9 @@ async function handleLogin() {
   document.getElementById('loginBtn').disabled = true;
   document.getElementById('loginBtn').textContent = '⏳ جاري...';
 
-  const { data, error } = await signIn(email, password);
-
-  if (error) {
-    showAuthError(errorEl, error.message === 'Invalid login credentials'
-      ? '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة'
-      : '❌ ' + error.message);
+  let result;
+  try { result = await signIn(email, password); } catch (e) {
+    showAuthError(errorEl, '❌ ' + (e.message || 'خطأ في تسجيل الدخول'));
     document.getElementById('loginBtn').disabled = false;
     document.getElementById('loginBtn').textContent = '🔑 دخول';
     return;
@@ -141,10 +138,10 @@ async function handleSignup() {
   document.getElementById('signupBtn').disabled = true;
   document.getElementById('signupBtn').textContent = '⏳ جاري...';
 
-  const { data, error } = await signUp(email, password, name);
-
-  if (error) {
-    showAuthError(errorEl, '❌ ' + error.message);
+  try {
+    await signUp(email, password, name);
+  } catch (e) {
+    showAuthError(errorEl, '❌ ' + (e.message || 'خطأ في إنشاء الحساب'));
     document.getElementById('signupBtn').disabled = false;
     document.getElementById('signupBtn').textContent = '📝 إنشاء الحساب';
     return;
