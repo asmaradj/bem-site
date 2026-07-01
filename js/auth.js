@@ -109,7 +109,8 @@ async function handleLogin() {
     return;
   }
 
-  if (authCallback) authCallback();
+  const user = result?.data?.user || result?.user || (await getCurrentUser());
+  if (authCallback) authCallback(user || { email });
   else window.bemBack();
 }
 
@@ -138,8 +139,9 @@ async function handleSignup() {
   document.getElementById('signupBtn').disabled = true;
   document.getElementById('signupBtn').textContent = '⏳ جاري...';
 
+  let result;
   try {
-    await signUp(email, password, name);
+    result = await signUp(email, password, name);
   } catch (e) {
     showAuthError(errorEl, '❌ ' + (e.message || 'خطأ في إنشاء الحساب'));
     document.getElementById('signupBtn').disabled = false;
@@ -147,7 +149,8 @@ async function handleSignup() {
     return;
   }
 
-  if (authCallback) authCallback();
+  const user = result?.data?.user || result?.user || (await getCurrentUser());
+  if (authCallback) authCallback(user || { email });
   else window.bemBack();
 }
 
