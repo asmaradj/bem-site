@@ -452,5 +452,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btn) btn.textContent = user ? '👤 ' + (user.email || 'حسابي') : '👤 دخول';
   });
 
-  syncSubscription().then(() => renderHome());
+  renderHome();
+  syncSubscription().then(() => {
+    const sub = getSubscription();
+    if (sub && sub.status === 'active') renderHome();
+  });
 });
