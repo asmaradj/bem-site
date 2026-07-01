@@ -1,13 +1,15 @@
-const SUPABASE_URL = 'https://vcflomphcmmctpczhmzx.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_Rk58lrT6uXsf-r6WCr7_TA_NJCI46rg';
+// Uses SUPABASE_URL and SUPABASE_ANON_KEY from the global scope (set in data.js or db.js)
+// If not yet set, use local fallback
+const AUTH_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : 'https://vcflomphcmmctpczhmzx.supabase.co';
+const AUTH_KEY = typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : (typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : 'sb_publishable_Rk58lrT6uXsf-r6WCr7_TA_NJCI46rg');
 
 async function supabaseAuth(method, path, body) {
   const opts = {
     method,
-    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }
+    headers: { 'apikey': AUTH_KEY, 'Authorization': 'Bearer ' + AUTH_KEY, 'Content-Type': 'application/json' }
   };
   if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(SUPABASE_URL + '/auth/v1/' + path, opts);
+  const r = await fetch(AUTH_URL + '/auth/v1/' + path, opts);
   const json = await r.json();
   if (!r.ok) throw new Error(json.msg || json.error || json.error_description || 'Auth error ' + r.status);
   return json;
@@ -17,8 +19,8 @@ async function getCurrentUser() {
   const accessToken = localStorage.getItem('sb-access-token');
   if (!accessToken) return null;
   try {
-    const r = await fetch(SUPABASE_URL + '/auth/v1/user', {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + accessToken }
+    const r = await fetch(AUTH_URL + '/auth/v1/user', {
+      headers: { 'apikey': AUTH_KEY, 'Authorization': 'Bearer ' + accessToken }
     });
     if (!r.ok) { localStorage.removeItem('sb-access-token'); return null; }
     const user = await r.json();
@@ -43,9 +45,9 @@ async function signOut() {
   localStorage.removeItem('sb-access-token');
   if (accessToken) {
     try {
-      await fetch(SUPABASE_URL + '/auth/v1/logout', {
+      await fetch(AUTH_URL + '/auth/v1/logout', {
         method: 'POST',
-        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + accessToken }
+        headers: { 'apikey': AUTH_KEY, 'Authorization': 'Bearer ' + accessToken }
       });
     } catch {}
   }
